@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenWeatherMap REST API Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    input, button { font-size: 1rem; padding: 0.5rem; }
+    pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <h1>OpenWeatherMap API Demo</h1>
+
+  <!-- GET demo -->
+  <section>
+    <h2>1. Fetch Current Weather (GET)</h2>
+    <label for="city">City:</label>
+    <input type="text" id="city" value="Tarlac City">
+    <button id="btn-get">Get Weather</button>
+    <pre id="get-output"></pre>
+  </section>
+
+  <!-- POST demo -->
+  <section>
+    <h2>2. Register a New Station (POST)</h2>
+    <button id="btn-post">Register Sample Station</button>
+    <pre id="post-output"></pre>
+  </section>
+
+  <script>
+    // ─── Configuration ──────────────────────────────────────────────────────────
+    const API_KEY = '36fc26af05a9e08c07d42ef0b562797b';
+    const BASE_URL = 'https://api.openweathermap.org';
+
+    // ─── GET: Current Weather ───────────────────────────────────────────────────
+    document.getElementById('btn-get').addEventListener('click', () => {
+      const city = encodeURIComponent(document.getElementById('city').value);
+      const url  = `${BASE_URL}/data/2.5/weather?q=${city}&units=metric&appid=${API_KEY}`;
+
+      fetch(url)
+        .then(resp => {
+          if (!resp.ok) throw new Error(`Status: ${resp.status}`);
+          return resp.json();
+        })
+        .then(data => {
+          document.getElementById('get-output').textContent =
+            JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+          document.getElementById('get-output').textContent = err;
+        });
+    });
+
+    // ─── POST: Register Weather Station ──────────────────────────────────────────
+    document.getElementById('btn-post').addEventListener('click', () => {
+      const station = {
+        external_id: 'PH_TARLAC01',
+        name:        'IPT2 Sample Station Tarlac',
+        latitude:    15.4889,
+        longitude:   120.5986,
+        altitude:    61
+      };
+      const url = `${BASE_URL}/data/3.0/stations?appid=${API_KEY}`;
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(station)
+      })
+      .then(resp => {
+        if (!resp.ok) throw new Error(`Status: ${resp.status}`);
+        return resp.json();
+      })
+      .then(data => {
+        document.getElementById('post-output').textContent =
+          JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        document.getElementById('post-output').textContent = err;
+      });
+    });
+  </script>
+
+</body>
+</html>
