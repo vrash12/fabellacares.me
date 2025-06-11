@@ -14,7 +14,6 @@
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css"
     rel="stylesheet">
-
   <style>
     :root {
       --primary: #00b467;
@@ -448,7 +447,9 @@
         padding: 1rem;
       }
     }
-  </style>
+  </style>  
+
+
 </head>
 <body>
   {{-- ─── LOADING OVERLAY ──────────────────────────────────────────────────── --}}
@@ -464,33 +465,53 @@
         <i class="bi bi-arrow-left"></i> Back
       </a>
 
+      {{-- ← Four management buttons moved from index --}}
+    
+      <a href="{{ route('queue.delete.list', $queue) }}" class="btn-back">
+        <i class="bi bi-trash"></i> Manage
+      </a>
+      <form action="{{ route('queue.store', $queue) }}" method="POST" class="d-inline">
+        @csrf
+        <button class="btn-back" type="submit" formtarget="_blank">
+          <i class="bi bi-plus-circle"></i> Add Token
+        </button>
+      </form>
+      @php $next = $queue->tokens()->whereNull('served_at')->orderBy('created_at')->first(); @endphp
+      @if($next)
+        <a href="{{ route('queue.tokens.edit', [$queue, $next]) }}" class="btn-back">
+          <i class="bi bi-pencil-square"></i> Edit Next
+        </a>
+      @else
+        <span class="btn-back text-muted" style="opacity:.6;cursor:not-allowed">
+          <i class="bi bi-pencil-square"></i> No Token
+        </span>
+      @endif
+
       {{-- “Serve Next” Button --}}
       <form action="{{ route('queue.serveNext.admin', $queue) }}"
             method="POST"
             class="d-inline teambar-form">
         @csrf
         @method('PATCH')
-        <button type="submit" class="btn-serve" onclick="return confirm('Serve next token?');">
+        <button type="submit" class="btn-serve"
+                onclick="return confirm('Serve next token?');">
           <i class="bi bi-play-fill"></i> Serve Next
         </button>
       </form>
 
       {{-- «NEW» “Reset Counter” Button --}}
-     <form action="{{ route('queue.reset', $queue) }}"
-      method="POST"
-      class="d-inline teambar-form"
-      onsubmit="return confirm(
-          'Reset the token counter for {{ $queue->name }} ' +
-          'back to 1?  ➜  Existing tokens stay untouched.'
-      );">
-  @csrf
-  @method('PATCH')
-  <button type="submit" class="btn-reset">
-    <i class="bi bi-arrow-counterclockwise"></i>
-    Reset&nbsp;Counter
-  </button>
-</form>
-
+      <form action="{{ route('queue.reset', $queue) }}"
+            method="POST"
+            class="d-inline teambar-form"
+            onsubmit="return confirm(
+              'Reset the token counter for {{ $queue->name }} back to 1? Existing tokens stay untouched.'
+            );">
+        @csrf
+        @method('PATCH')
+        <button type="submit" class="btn-reset">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset Counter
+        </button>
+      </form>
 
       {{-- Route “Next Pending” into Child Queues (if any) --}}
       @if($queue->children->isNotEmpty())
@@ -512,35 +533,35 @@
     </div>
 
     {{-- Logo on Right --}}
-    <img src="{{ asset('images/fabella-logo.png') }}" alt="Fabella Logo" class="logo">
+    <img src="{{ asset('images/fabella-logo.png') }}"
+         alt="Fabella Logo"
+         class="logo">
   </div>
 
   {{-- ─── TAB NAVIGATION ───────────────────────────────────────────────────── --}}
   <div class="container-fluid p-3">
     <ul class="nav nav-tabs" id="adminQueueTabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button
-          class="nav-link active"
-          id="ongoing-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#ongoing"
-          type="button"
-          role="tab"
-          aria-controls="ongoing"
-          aria-selected="true">
+        <button class="nav-link active"
+                id="ongoing-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#ongoing"
+                type="button"
+                role="tab"
+                aria-controls="ongoing"
+                aria-selected="true">
           <i class="bi bi-hourglass-split me-1"></i> Ongoing
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button
-          class="nav-link"
-          id="finished-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#finished"
-          type="button"
-          role="tab"
-          aria-controls="finished"
-          aria-selected="false">
+        <button class="nav-link"
+                id="finished-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#finished"
+                type="button"
+                role="tab"
+                aria-controls="finished"
+                aria-selected="false">
           <i class="bi bi-check2-circle me-1"></i> Finished
         </button>
       </li>
@@ -548,15 +569,14 @@
 
     {{-- ─── TAB CONTENT ─────────────────────────────────────────────────────── --}}
     <div class="tab-content" id="adminQueueTabsContent">
-      {{-- ==================== ONGOING TAB ==================== --}}
-      <div
-        class="tab-pane fade show active"
-        id="ongoing"
-        role="tabpanel"
-        aria-labelledby="ongoing-tab">
+      {{-- ONGOING TAB --}}
+      <div class="tab-pane fade show active"
+           id="ongoing"
+           role="tabpanel"
+           aria-labelledby="ongoing-tab">
 
         <div class="layout">
-          {{-- LEFT COLUMN: Next Five Pending Tokens --}}
+          {{-- LEFT: Next Five Pending Tokens --}}
           <div class="queue-list">
             <div class="queue-header">
               <i class="bi bi-list-ol me-1"></i> Queue
@@ -577,7 +597,7 @@
             </div>
           </div>
 
-          {{-- RIGHT COLUMN: Dept Name / Timestamp / Now Serving --}}
+          {{-- RIGHT: Dept Name / Timestamp / Now Serving --}}
           <div class="right-pane">
             <div class="dept-header">
               {{ $queue->short_name ?? $queue->name }}
@@ -598,12 +618,11 @@
         </div>
       </div>
 
-      {{-- ==================== FINISHED TAB ==================== --}}
-      <div
-        class="tab-pane fade"
-        id="finished"
-        role="tabpanel"
-        aria-labelledby="finished-tab">
+      {{-- FINISHED TAB --}}
+      <div class="tab-pane fade"
+           id="finished"
+           role="tabpanel"
+           aria-labelledby="finished-tab">
 
         <div class="finished-list-container">
           <div class="finished-label">
@@ -621,7 +640,8 @@
                 <div class="finished-item">
                   <span class="finished-code">{{ $token->code }}</span>
                   <span class="finished-time">
-                      Served at {{ \Carbon\Carbon::parse($token->served_at)->format('H:i:s, d M Y') }}
+                    Served at {{ \Carbon\Carbon::parse($token->served_at)
+                                 ->format('H:i:s, d M Y') }}
                   </span>
                 </div>
               @endforeach
@@ -634,9 +654,8 @@
 
   {{-- ─── BOOTSTRAP JS (tabs + dependencies) ───────────────────────────────── --}}
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
   {{-- ─── LIVE‐POLL SCRIPT FOR “ONGOING” TAB ───────────────────────────────── --}}
-  <script>
+ <script>
     const statusUrl = "{{ route('queue.status', $queue) }}";
     const listEl    = document.getElementById('queueList');
     const nowCodeEl = document.getElementById('nowCode');

@@ -219,16 +219,6 @@ public function edit(OpdSubmission $submission)
         $submission->answers       = $validated;
         $submission->save();
 
-        // 3) (Optional) If you ever want to update the Visit row too, you could uncomment the block below.
-        //    However, most cases do not require modifying a past “visit” timestamp—so it’s left commented.
-        //
-        // $visit = Visit::where('patient_id', $submission->patient_id)
-        //               ->whereDate('visited_at', $submission->created_at->toDateString())
-        //               ->first();
-        // if ($visit) {
-        //     $visit->department_id = $validated['department_id'];
-        //     $visit->save();
-        // }
 
         return redirect()
             ->route('follow-up-opd-forms.index')

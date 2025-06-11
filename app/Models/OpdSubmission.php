@@ -24,6 +24,11 @@ class OpdSubmission extends Model
         return $this->belongsTo(OpdForm::class, 'form_id');
     }
 
+    public function tokens()
+    {
+        return $this->hasMany(Token::class, 'submission_id');
+    }
+
     public function patient()
     {
         return $this->belongsTo(Patient::class, 'patient_id');

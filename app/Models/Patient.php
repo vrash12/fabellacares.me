@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,6 +23,7 @@ class Patient extends Model
         'address',
     ];
 
+    
     /**
      * The attributes that should be cast to native types.
      */
@@ -36,6 +38,23 @@ class Patient extends Model
     /**
      * A Patient belongs to a User (credentials, email, password, etc.).
      */
+
+     public function submissions(): HasMany
+{
+    return $this->hasMany(OpdSubmission::class, 'patient_id');
+}
+
+public function tokens(): HasManyThrough
+{
+    return $this->hasManyThrough(
+        Token::class,
+        OpdSubmission::class,
+        'patient_id',      // foreign on submissions
+        'submission_id',   // foreign on tokens
+        'id',              // local key on patients
+        'id'               // local key on submissions
+    );
+}
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -58,7 +77,7 @@ class Patient extends Model
 
 public function visits()
 {
-    return $this->hasMany(Visit::class);
+    return $this->hasMany(PatientVisit::class);
 }
 
 }

@@ -27,16 +27,37 @@ use App\Http\Controllers\HighRiskOpdFormController;
 // 1) Authentication & root redirect
 Auth::routes();
 Route::get('/', fn() => redirect()->route('login'));
+// 5) Public “General” queue and window selection
+Route::get('/queues/general',    [QueueController::class,'selectGeneral'])
+     ->name('queue.general');
 
-// 2) Print a queue token (requires authentication)
-Route::get('queue/{token}/print', [QueueController::class, 'printReceipt'])
-     ->middleware('auth')
-     ->name('queue.tokens.print');
 
 // 3) AJAX patient‐search for Select2 (admin & encoder)
 Route::get('patients/search', [PatientRecordController::class, 'search'])
      ->middleware('auth','role:admin,encoder')
      ->name('patients.search');
+
+Route::middleware('auth')->group(function () {
+
+    // View queues that belong to this patient
+    Route::get(
+        'patients/{patient}/queue',
+        [QueueController::class, 'forPatient']
+    )->name('patients.queue.index');
+
+    // Create a token for the patient in a queue
+    Route::post(
+        'patients/{patient}/queue',
+        [QueueController::class, 'patientStore']
+    )->name('patients.queue.store');
+
+    // Print that specific token
+    Route::get(
+        'patients/{patient}/queue/{token}/print',
+        [QueueController::class, 'forPatientPrint']
+    )->name('patients.queue.print');
+});
+
 
 // 4) OB-OPD form templates (admin only)
 Route::middleware('auth')->prefix('ob-opd/forms')->group(function () {
@@ -56,8 +77,13 @@ Route::middleware('auth')->prefix('ob-opd/forms')->group(function () {
          ->name('ob-opd-forms.destroy');
 });
 
+
 Route::middleware('auth')->group(function () {
     // Show “New Follow-Up Record” (OPD-F-08)
+    Route::get('patients/{patient}/queue/{token}/print', [QueueController::class,'forPatientPrint'])
+     ->middleware('auth')
+     ->name('patients.queue.print');
+     
     Route::get('follow-up-opd-forms/create', [FollowUpOpdFormController::class, 'create'])
          ->name('follow-up-opd-forms.create');
 
@@ -76,9 +102,7 @@ Route::middleware('auth')->group(function () {
           ->name('follow-up-opd-forms.destroy');
 });
 
-// 5) Public “General” queue and window selection
-Route::get('/queues/general',    [QueueController::class,'selectGeneral'])
-     ->name('queue.general_select');
+
 
 Route::get('/queues/select',     [QueueController::class,'selectQueue'])
      ->name('queue.queue_select');
@@ -120,9 +144,30 @@ Route::get ('patients/{patient}/visits',
         'show'
     ])->name('patients.visits.show');
 
+    Route::get('patients/{patient}/queue', [
+        \App\Http\Controllers\QueueController::class,
+        'forPatient'
+    ])->name('patients.queue.index');
+    
+
+ Route::middleware('auth')
+     ->get('patients/{patient}/queue/{token}/print', [
+         \App\Http\Controllers\QueueController::class,
+         'forPatientPrint'
+     ])
+     ->name('patients.queue.print');
+    Route::post(
+    'patients/{patient}/queue',
+    [\App\Http\Controllers\QueueController::class, 'patientStore']
+)->middleware('auth')->name('patients.queue.store');
+
     Route::get ('patients/{patient}/visits/{visit}',
         [PatientVisitController::class,'show'])
         ->name('patients.visits.show');
+Route::post(
+    'patients/{patient}/queue',
+    [QueueController::class, 'patientStore']
+)->name('patients.queue.store');
     // Password change
     Route::get('password/change', [ChangePasswordController::class,'show'])
          ->name('password.change');
@@ -241,73 +286,29 @@ Route::get ('patients/{patient}/visits',
              ->name('queue.encoder.store');
     });
 
-    // 8) Encoder-only OPD form routes
-    Route::middleware(['auth','role:encoder'])
-         ->prefix('encoder/opd_forms')
-         ->name('encoder.opd_forms.')
-         ->group(function () {
+ Route::middleware(['auth', 'role:encoder'])
+    ->prefix('encoder')
+    ->as('encoder.')
+    ->group(function () {
 
-        // 8.1) Main OPD forms (index/create/show/edit/update/destroy)
-        Route::get('/',                        [EncoderOpdFormController::class, 'index'])
-             ->name('index');
-        Route::get('create',                   [EncoderOpdFormController::class, 'create'])
-             ->name('create');
-        Route::post('/',                       [EncoderOpdFormController::class, 'store'])
-             ->name('store');
-        Route::get('{submission}',             [EncoderOpdFormController::class, 'show'])
-             ->name('show');
-        Route::get('{submission}/edit',        [EncoderOpdFormController::class, 'edit'])
-             ->name('edit');
-        Route::put('{submission}',             [EncoderOpdFormController::class, 'update'])
-             ->name('update');
-        Route::delete('{submission}',          [EncoderOpdFormController::class, 'destroy'])
-             ->name('destroy');
+        // OPD-F-06: High-Risk OPD forms
+        Route::resource('opd/high-risk', HighRiskOpdFormController::class, [
+            'as'         => 'opd',
+            'parameters' => ['high-risk' => 'id'],
+        ]);
 
-        // 8.2) Follow-Up OPD forms (nested under /encoder/opd_forms/follow_up)
-        Route::get('follow_up',                [EncoderFollowUpOpdFormController::class, 'index'])
-             ->name('follow_up.index');
-        Route::get('follow_up/create',         [EncoderFollowUpOpdFormController::class, 'create'])
-             ->name('follow_up.create');
-        Route::post('follow_up',               [EncoderFollowUpOpdFormController::class, 'store'])
-             ->name('follow_up.store');
-        Route::get('follow_up/{followup}',     [EncoderFollowUpOpdFormController::class, 'show'])
-             ->name('follow_up.show');
-        Route::get('follow_up/{followup}/edit',[EncoderFollowUpOpdFormController::class, 'edit'])
-             ->name('follow_up.edit');
-        Route::put('follow_up/{followup}',     [EncoderFollowUpOpdFormController::class, 'update'])
-             ->name('follow_up.update');
-        Route::delete('follow_up/{followup}',  [EncoderFollowUpOpdFormController::class, 'destroy'])
-             ->name('follow_up.destroy');
+        // OPD-F-05: Follow-Up OPD forms
+        Route::resource('opd/follow-up', FollowUpOpdFormController::class, [
+            'as'         => 'opd',
+            'parameters' => ['follow-up' => 'id'],
+        ]);
 
-        // 8.3) High-Risk OPD forms (nested under /encoder/opd_forms/high_risk)
-        Route::get('high_risk',                [EncoderHighRiskOpdFormController::class, 'index'])
-             ->name('high_risk.index');
-        Route::get('high_risk/create',         [EncoderHighRiskOpdFormController::class, 'create'])
-             ->name('high_risk.create');
-        Route::post('high_risk',               [EncoderHighRiskOpdFormController::class, 'store'])
-             ->name('high_risk.store');
-        Route::get('high_risk/{highrisk}',     [EncoderHighRiskOpdFormController::class, 'show'])
-             ->name('high_risk.show');
-        Route::get('high_risk/{highrisk}/edit',[EncoderHighRiskOpdFormController::class, 'edit'])
-             ->name('high_risk.edit');
-        Route::put('high_risk/{highrisk}',     [EncoderHighRiskOpdFormController::class, 'update'])
-             ->name('high_risk.update');
-        Route::delete('high_risk/{highrisk}',  [EncoderHighRiskOpdFormController::class, 'destroy'])
-             ->name('high_risk.destroy');
+        // OPD-F-07: OB OPD forms
+        Route::resource('opd/ob', ObOpdFormController::class, [
+            'as'         => 'opd',
+            'parameters' => ['ob' => 'id'],
+        ]);
 
-        // 8.4) OPDB forms (nested under /encoder/opd_forms/opdb)
-        Route::get('opdb',                     [EncoderOpdbFormController::class, 'index'])
-             ->name('opdb.index');
-        Route::get('opdb/create',              [EncoderOpdbFormController::class, 'create'])
-             ->name('opdb.create');
-        Route::post('opdb',                    [EncoderOpdbFormController::class, 'store'])
-             ->name('opdb.store');
-        Route::get('opdb/{opdb}',              [EncoderOpdbFormController::class, 'show'])
-             ->name('opdb.show');
-        // If OPDB is read‐only for encoders, omit edit/update/destroy; otherwise uncomment:
-        // Route::get('opdb/{opdb}/edit',   [EncoderOpdbFormController::class, 'edit'])->name('opdb.edit');
-        // Route::put('opdb/{opdb}',        [EncoderOpdbFormController::class, 'update'])->name('opdb.update');
-        // Route::delete('opdb/{opdb}',     [EncoderOpdbFormController::class, 'destroy'])->name('opdb.destroy');
     });
 
     // 9) Fill & submit any OPD template (admin, encoder, patient)
@@ -331,3 +332,7 @@ Route::patch(
     'queue/{queue}/reset',
     [QueueController::class, 'resetCounter']
 )->name('queue.reset');
+
+Route::get('queue/{token}/print', [QueueController::class, 'printReceipt'])
+     ->middleware('auth')
+     ->name('queue.tokens.print');

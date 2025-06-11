@@ -26,4 +26,9 @@ class Token extends Model
     public function department() { return $this->belongsTo(Department::class); }
     public function patient()    { return $this->belongsTo(Patient::class); }
     public function visit()      { return $this->hasOne(Visit::class); }
+     public function submission()
+    {
+        return $this->belongsTo(OpdSubmission::class);
+    }
+
 }

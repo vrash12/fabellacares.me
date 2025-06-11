@@ -1,5 +1,12 @@
 {{-- resources/views/opd_forms/opdb/index.blade.php --}}
-@extends('layouts.admin')
+@php
+    $layout = auth()->user()->role === 'encoder'
+            ? 'layouts.encoder'
+            : 'layouts.admin';
+@endphp
+
+@extends($layout)
+
 
 @section('content')
 <div class="container">

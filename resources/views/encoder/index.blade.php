@@ -1,5 +1,5 @@
 {{-- resources/views/encoder/index.blade.php --}}
-@extends('layouts.admin')
+@extends('layouts.encoder')
 
 @section('content')
   <div class="container">

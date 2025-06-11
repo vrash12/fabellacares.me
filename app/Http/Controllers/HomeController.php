@@ -17,46 +17,56 @@ class HomeController extends Controller
         // $this->middleware('role:admin');
     }
 
-    public function index()
-    {
-        // 1) Today’s visits (from patient_visits)
-        $todayVisits = PatientVisit::whereDate('visited_at', Carbon::today())
-                                   ->count();
+  public function index()
+{
+    // ---------- 1. TODAY’S VISITS ----------
+    $todayVisits = PatientVisit::whereDate('visited_at', Carbon::today())
+                               ->count();
 
-        // 2) Average wait time for tokens served today
-        $servedToday = Token::whereDate('served_at', Carbon::today())
-                            ->whereNotNull('served_at')
-                            ->get();
+    // ---------- 2. NEW PATIENTS TODAY ----------
+    $newPatients = \App\Models\Patient::whereDate('created_at', Carbon::today())
+                                      ->count();
 
-        $avgWaitSeconds = $servedToday->avg(fn($t) => 
-            $t->served_at->diffInSeconds($t->created_at)
-        );
+    // ---------- 3. AVERAGE WAIT (MINUTES) ----------
+    $servedToday = Token::whereDate('served_at', Carbon::today())
+                        ->whereNotNull('served_at')
+                        ->get();
 
-        // convert to minutes, one decimal
-        $avgWait = $avgWaitSeconds
-                 ? round($avgWaitSeconds / 60, 1)
-                 : 0;
+    $avgWaitSeconds = $servedToday->avg(
+        fn ($t) => $t->served_at->diffInSeconds($t->created_at)
+    );
+    $avgWait = $avgWaitSeconds
+             ? round($avgWaitSeconds / 60, 1)   // minutes, 1 dp
+             : 0;
 
-        // 3) Current queue length (pending tokens)
-        $currentQueue = Token::whereNull('served_at')->count();
+    // ---------- 4. CURRENT QUEUE LENGTH ----------
+    $currentQueue = Token::whereNull('served_at')->count();
 
-        // 4) Department breakdown of *today’s* tokens created
-      $deptStats = Token::whereDate('created_at', Carbon::today())
-            ->select('queue_id', DB::raw('count(*) as count'))
-            ->groupBy('queue_id')
-            ->with('queue')
-            ->get()
-            ->map(fn($r) => [
-                'id'    => $r->queue_id,
-                'name'  => $r->queue->name,
-                'count' => $r->count,
-            ]);
+    // ---------- 5. HIGH-RISK OPD FORMS TODAY ----------
+    $highRiskToday = \App\Models\OpdSubmission::whereDate('created_at', Carbon::today())
+        ->whereHas('form', fn ($q) => $q->where('form_no', 'OPD-F-06'))
+        ->count();
 
-        return view('home', compact(
-            'todayVisits',
-            'avgWait',
-            'currentQueue',
-            'deptStats'
-        ));
-    }
+    // ---------- CHART DATA (visits by department) ----------
+    $deptStats = Token::whereDate('created_at', Carbon::today())
+        ->select('queue_id', DB::raw('count(*) as count'))
+        ->groupBy('queue_id')
+        ->with('queue')
+        ->get()
+        ->map(fn ($r) => [
+            'id'    => $r->queue_id,
+            'name'  => $r->queue->name,
+            'count' => $r->count,
+        ]);
+
+    return view('home', compact(
+        'todayVisits',
+        'newPatients',
+        'avgWait',
+        'currentQueue',
+        'highRiskToday',
+        'deptStats'
+    ));
+}
+
 }

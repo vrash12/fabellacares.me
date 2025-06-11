@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{OpdForm, OpdSubmission, Patient, Token, Department};
+use App\Models\{OpdForm, OpdSubmission, Patient, Token, Department, Queue};
 use Illuminate\Http\Request;
 
 class ObOpdFormController extends Controller
@@ -13,28 +13,27 @@ class ObOpdFormController extends Controller
         $this->middleware('auth');
     }
 
-    /**
-     * 1. List all OB submissions (form_no = OPD-F-07)
-     */
-public function index()
-{
-    // ① bring back every submission of the OB template, with patient+user loaded
-    $subs = OpdSubmission::with('patient.user', 'form')
-        ->whereHas('form', fn($q) => $q->where('form_no', 'OPD-F-07'))
-        ->latest()
-        ->get();
+   public function index()
+    {
+        // ① bring back every submission of the OB template, with patient+user loaded
+        $subs = OpdSubmission::with('patient.user', 'form')
+            ->whereHas('form', fn($q) => $q->where('form_no', 'OPD-F-07'))
+            ->latest()
+            ->get();
 
-    // ② extract patients, filter out nulls, make them unique
-    $patients = $subs
-        ->pluck('patient')          // collection of Patient|null
-        ->filter()                  // removes every null automatically
-        ->unique('id')              // keep one row per patient
-        ->values();                 // reset the keys (0,1,2…)
+        // ② extract patients, filter out nulls, make them unique
+        $patients = $subs
+            ->pluck('patient')
+            ->filter()
+            ->unique('id')
+            ->values();
 
-    // ③ send to the same blade you’re already using
-    return view('patients.index', compact('patients'));
-}
+        // ③ fetch your “queues” (departments) for the modal
+        $queues = Department::all();
 
+        // ④ return to the same patients.index view, but now with both variables
+        return view('patients.index', compact('patients', 'queues'));
+    }
     /**
      * 2. Show blank OB-OPD form
      */
@@ -187,51 +186,32 @@ public function index()
         $patient->profile()
                 ->updateOrCreate([], $profile);
 
-        // ────────────────────────────────────────────────────────────────────────
-        // ④ Now: Insert a new Token into the OB queue. 
-        //     (We assume your `queues` table has a row whose `department_id` = OB department’s ID.)
-        //     Replace this with whatever logic you need to pick *the* OB queue record.
-        // ────────────────────────────────────────────────────────────────────────
+      $obQueue = Queue::where('name', 'OB')->first();
 
-        // Find the “OB” department
-        $obDept = Department::where('short_name', 'OB')
-                           ->orWhere('name', 'like', '%OB%')
-                           ->first();
+    if ($obQueue) {
+        // Ensure this patient isn’t already waiting (no unserved token)
+        $alreadyWaiting = Token::where('queue_id', $obQueue->id)
+                              ->where('patient_id', $patient->id)
+                              ->whereNull('served_at')
+                              ->exists();
 
-        if ($obDept) {
-            // Find the queue row whose department_id = $obDept->id
-            $obQueue = Queue::where('department_id', $obDept->id)->first();
+        if (! $alreadyWaiting) {
+            $nextNum = Token::where('queue_id', $obQueue->id)->count() + 1;
+            $code    = 'O' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
 
-            if ($obQueue) {
-                // Ensure this patient isn’t already waiting (no unserved token)
-                $alreadyWaiting = Token::where('queue_id', $obQueue->id)
-                                      ->where('patient_id', $patient->id)
-                                      ->whereNull('served_at')
-                                      ->exists();
+            $newToken = Token::create([
+                'queue_id'      => $obQueue->id,
+                'patient_id'    => $patient->id,
+                'code'          => $code,
+            ]);
 
-                if (! $alreadyWaiting) {
-                    // Next incremental number for that queue
-                    $nextNum = Token::where('queue_id', $obQueue->id)->count() + 1;
-                    $code    = 'O' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
-
-                    $newToken = Token::create([
-                        'queue_id'   => $obQueue->id,
-                        'patient_id' => $patient->id,
-                        'code'       => $code,
-                    ]);
-
-                    // Store the new token’s ID in the session so you can print it
-                    session([
-                        'new_token_id' => $newToken->id,
-                    ]);
-                }
-            }
+            session(['new_token_id' => $newToken->id]);
         }
+    }
 
-        // Finally, redirect back to the OB‐OPD index (or wherever you like).
-        return redirect()
-            ->route('ob-opd-forms.index')
-            ->with('success', 'OB submission saved successfully.');
+    return redirect()
+        ->route('ob-opd-forms.index')
+        ->with('success', 'OB submission saved successfully.');
     }
 
     /**

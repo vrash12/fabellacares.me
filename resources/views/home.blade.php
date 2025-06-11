@@ -4,23 +4,54 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+{{-- === KPI CARDS ======================================================= --}}
 <div class="row g-4 mb-5">
-  <!-- KPI: Today's Visits -->
-  <div class="col-md-4">
+  {{-- 1. Today’s Visits --}}
+  <div class="col-md-4 col-lg-3">
     <div class="card text-white bg-primary h-100">
       <div class="card-body">
-        <h6 class="card-title">Today's Visits</h6>
-        <h2>{{ $todayVisits }}</h2>
+        <h6 class="card-title mb-2">Today's Visits</h6>
+        <h2 class="mb-0">{{ $todayVisits }}</h2>
       </div>
     </div>
   </div>
 
-  <!-- KPI: Current Queue Length -->
-  <div class="col-md-4">
+  {{-- 2. New Patients Today --}}
+  <div class="col-md-4 col-lg-3">
+    <div class="card text-white bg-success h-100">
+      <div class="card-body">
+        <h6 class="card-title mb-2">New Patients Today</h6>
+        <h2 class="mb-0">{{ $newPatients }}</h2>
+      </div>
+    </div>
+  </div>
+
+  {{-- 3. Average Wait Time (min) --}}
+  <div class="col-md-4 col-lg-3">
+    <div class="card text-white bg-info h-100">
+      <div class="card-body">
+        <h6 class="card-title mb-2">Avg&nbsp;Wait&nbsp;(min)</h6>
+        <h2 class="mb-0">{{ $avgWait }}</h2>
+      </div>
+    </div>
+  </div>
+
+  {{-- 4. Current Queue Length --}}
+  <div class="col-md-4 col-lg-3">
     <div class="card text-white bg-warning h-100">
       <div class="card-body">
-        <h6 class="card-title">Current Queue Length</h6>
-        <h2>{{ $currentQueue }}</h2>
+        <h6 class="card-title mb-2">Current Queue</h6>
+        <h2 class="mb-0">{{ $currentQueue }}</h2>
+      </div>
+    </div>
+  </div>
+
+  {{-- 5. High-Risk OPD Forms Today --}}
+  <div class="col-md-4 col-lg-3">
+    <div class="card text-white bg-danger h-100">
+      <div class="card-body">
+        <h6 class="card-title mb-2">High-Risk Forms</h6>
+        <h2 class="mb-0">{{ $highRiskToday }}</h2>
       </div>
     </div>
   </div>

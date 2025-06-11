@@ -13,6 +13,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use PDF;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Collections;
+use App\Models\Queue;
 
 class PatientRecordController extends Controller
 {
@@ -53,45 +54,42 @@ class PatientRecordController extends Controller
 
         return response()->json(['results' => $results]);
     }
-
 public function index(Request $request)
 {
-    // 1) Find all OPD‐F‐07 submissions (with their patient & profile)
+    // --------- 1. filter patients ----------
     $query = OpdSubmission::with(['patient.profile'])
-        ->whereHas('form', fn($q) => $q->where('form_no','OPD-F-07'));
+        ->whereHas('form', fn ($q) => $q->where('form_no', 'OPD-F-07'));
 
-    // 2) If “search” exists, filter by patient name
     if ($search = $request->input('search')) {
-        $query->whereHas('patient', fn($q) =>
-            $q->where('name','like',"%{$search}%")
+        $query->whereHas('patient', fn ($q) =>
+            $q->where('name', 'like', "%{$search}%")
         );
     }
 
-    // 3) If “sex” filter exists, filter by patient.profile.sex
     if ($sex = $request->input('sex')) {
-        $query->whereHas('patient.profile', fn($q) =>
+        $query->whereHas('patient.profile', fn ($q) =>
             $q->where('sex', $sex)
         );
     }
 
-    // 4) Get all matching submissions
-    $submissions = $query->get();
+    $patientIds = $query->get()
+                        ->pluck('patient.id')
+                        ->unique()
+                        ->values()
+                        ->all();
 
-    // 5) Extract unique patient IDs
-    $patientIds = $submissions
-        ->pluck('patient.id')   // collect all patient‐IDs
-        ->unique()
-        ->values()
-        ->all();                // e.g., [3, 7, 12, …]
-
-    // 6) Query Patient model directly—with visits_count—only for those IDs
     $patients = Patient::with('profile')
-        ->withCount('visits')        // ← adds visits_count attribute
-        ->whereIn('id', $patientIds)
-        ->get();
+                ->withCount('visits')
+                ->whereIn('id', $patientIds)
+                ->get();
 
-    // 7) Pass to the Blade view
-    return view('patients.index', compact('patients'));
+ $queues = Queue::with('parent')          // eager-load parent window name
+                   ->whereNotNull('parent_id')
+                   ->orderBy('parent_id')
+                   ->orderBy('name')
+                   ->get();
+
+    return view('patients.index', compact('patients', 'queues'));
 }
 
 public function visits(Patient $patient)

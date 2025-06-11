@@ -14,6 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+ 
     <style>
         :root{
             --fc-primary:#0e4749;
@@ -157,7 +158,6 @@
         }
         @keyframes loading{0%{left:-100%}100%{left:100%}}
     </style>
-
     @stack('styles')
 </head>
 <body>
@@ -174,7 +174,7 @@
         </div>
 
         <div class="user-info">
-            <div class="user-avatar">{{ strtoupper(Str::substr(auth()->user()->name,0,2)) }}</div>
+            <div class="user-avatar">{{ strtoupper(Str::substr(auth()->user()->name, 0, 2)) }}</div>
             <div class="user-name">{{ auth()->user()->name }}</div>
             <div class="user-role">Encoder</div>
         </div>
@@ -183,15 +183,44 @@
             <div class="nav-section">
                 <div class="nav-section-title">Main Menu</div>
                 <ul class="nav flex-column">
+                    <!-- Dashboard -->
                     <li class="nav-item">
-                        <a href="{{ route('encoder.index') }}" class="nav-link {{ request()->routeIs('encoder.index') ? 'active' : '' }}">
-                            <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                        <a href="{{ route('encoder.index') }}"
+                           class="nav-link {{ request()->routeIs('encoder.index') ? 'active' : '' }}">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
                         </a>
                     </li>
-                   
+
+                    <!-- OPD Forms Section Header -->
+                    <li class="nav-item mt-3">
+                        <div class="nav-section-title">OPD Forms</div>
+                    </li>
+
+                    <!-- High-Risk OPD -->
                     <li class="nav-item">
-                        <a href="{{ route('encoder.opd.index') }}" class="nav-link {{ request()->is('encoder/opd*') ? 'active' : '' }}">
-                            <i class="bi bi-file-earmark-medical-fill"></i><span>OPD Forms</span>
+                        <a href="{{ route('encoder.opd.high-risk.index') }}"
+                           class="nav-link {{ request()->is('encoder/opd/high-risk*') ? 'active' : '' }}">
+                            <i class="bi bi-file-medical-fill"></i>
+                            <span>High-Risk OPD</span>
+                        </a>
+                    </li>
+
+                    <!-- Follow-Up OPD -->
+                    <li class="nav-item">
+                        <a href="{{ route('encoder.opd.follow-up.index') }}"
+                           class="nav-link {{ request()->is('encoder/opd/follow-up*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-medical-fill"></i>
+                            <span>Follow-Up OPD</span>
+                        </a>
+                    </li>
+
+                    <!-- OB OPD -->
+                    <li class="nav-item">
+                        <a href="{{ route('encoder.opd.ob.index') }}"
+                           class="nav-link {{ request()->is('encoder/opd/ob*') ? 'active' : '' }}">
+                            <i class="bi bi-file-medical"></i>
+                            <span>OB OPD</span>
                         </a>
                     </li>
                 </ul>
@@ -201,15 +230,18 @@
         <div class="sidebar-footer">
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a href="{{ route('password.change') }}" class="nav-link {{ request()->is('password/change') ? 'active' : '' }}">
-                        <i class="bi bi-key-fill"></i><span>Change Password</span>
+                    <a href="{{ route('password.change') }}"
+                       class="nav-link {{ request()->is('password/change') ? 'active' : '' }}">
+                        <i class="bi bi-key-fill"></i>
+                        <span>Change Password</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="nav-link btn btn-link text-start w-100">
-                            <i class="bi bi-box-arrow-right"></i><span>Logout</span>
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
                         </button>
                     </form>
                 </li>
@@ -222,8 +254,8 @@
         <div class="main-header">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="h3 mb-0 fw-bold">Dashboard</h1>
-                    <p class="text-muted mb-0">Welcome back! Here's what's happening today.</p>
+                    <h1 class="h3 mb-0 fw-bold">@yield('page-title', 'Dashboard')</h1>
+                    <p class="text-muted mb-0">@yield('page-subtitle', "Welcome back! Here's what's happening today.")</p>
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="text-end">
@@ -272,13 +304,14 @@
             document.getElementById('sidebar').classList.toggle('mobile-open');
         }
         document.addEventListener('click',e=>{
-            const sb=document.getElementById('sidebar'), btn=document.querySelector('.mobile-menu-btn');
+            const sb = document.getElementById('sidebar'),
+                  btn = document.querySelector('.mobile-menu-btn');
             if(window.innerWidth<=768 && !sb.contains(e.target) && !btn.contains(e.target)){
                 sb.classList.remove('mobile-open');
             }
         });
         function updateDate(){
-            const now=new Date();
+            const now = new Date();
             document.getElementById('currentDate').textContent =
                 now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
         }

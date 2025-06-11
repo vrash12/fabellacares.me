@@ -1,3 +1,4 @@
+{{--resources/views/queue/print.blade.php--}}
 <!DOCTYPE html>
 <html lang="en">
 <head>

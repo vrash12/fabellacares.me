@@ -1,4 +1,10 @@
-@extends('layouts.admin')
+@php
+    $layout = auth()->user()->role === 'encoder'
+            ? 'layouts.encoder'
+            : 'layouts.admin';
+@endphp
+
+@extends($layout)
 
 @section('content')
   <h1>Submission #{{ $submission->id }} for {{ $submission->form->name }}</h1>

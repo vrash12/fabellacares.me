@@ -627,7 +627,7 @@
         // Init on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
             updateDate();
-            // Auto-hide alerts after 5s
+            // Auto-hide alerts after 5s  
             setTimeout(() => {
                 document.querySelectorAll('.alert').forEach(a => new bootstrap.Alert(a).close());
             }, 5000);

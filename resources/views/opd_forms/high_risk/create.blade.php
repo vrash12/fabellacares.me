@@ -1,5 +1,12 @@
 {{-- resources/views/opd_forms/high_risk/create.blade.php --}}
-@extends('layouts.admin')
+@php
+    $layout = auth()->user()->role === 'encoder'
+            ? 'layouts.encoder'
+            : 'layouts.admin';
+@endphp
+
+@extends($layout)
+
 
 @section('content')
 <div class="page-header mb-4">

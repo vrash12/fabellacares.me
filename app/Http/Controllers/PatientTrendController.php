@@ -23,7 +23,7 @@ class PatientTrendController extends Controller
         $windowSize  = (int) $req->input('window_size', 14);
 
         // ── call Flask service ───────────────────────────────────────
-        $client = new Client(['base_uri' => 'http://127.0.0.1:5000', 'timeout' => 5]);
+        $client = new Client(['base_uri' => 'https://passionate-dream-production.up.railway.app/', 'timeout' => 5]);
 
         try {
             $response = $client->get('trends/result', [
@@ -61,7 +61,7 @@ class PatientTrendController extends Controller
         $steps       = (int) $req->input('steps', 14);
         $windowSize  = (int) $req->input('window_size', 14);
 
-        $client = new Client(['base_uri' => 'http://127.0.0.1:5000', 'timeout' => 10]);
+        $client = new Client(['base_uri' => 'https://passionate-dream-production.up.railway.app/', 'timeout' => 10]);
         try {
             $client->post('trends/analyse', [
                 'json' => [
@@ -97,7 +97,7 @@ class PatientTrendController extends Controller
         $steps       = (int) $req->input('steps', 14);
         $windowSize  = (int) $req->input('window_size', 14);
 
-        $client   = new Client(['base_uri' => 'http://127.0.0.1:5000']);
+        $client   = new Client(['base_uri' => 'https://passionate-dream-production.up.railway.app/']);
         $response = $client->get('trends/result', [
             'query' => [
                 'from'        => $from,
@@ -132,7 +132,7 @@ class PatientTrendController extends Controller
         $steps       = (int) $req->input('steps', 14);
         $windowSize  = (int) $req->input('window_size', 14);
 
-        $client = new Client(['base_uri' => 'http://127.0.0.1:5000']);
+        $client = new Client(['base_uri' => 'https://passionate-dream-production.up.railway.app/']);
         $response = $client->get('trends/result', [
             'query' => [
                 'from'        => $from,

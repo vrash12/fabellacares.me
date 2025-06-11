@@ -2,405 +2,575 @@
 @extends('layouts.admin')
 
 @section('content')
-
   <style>
     :root {
-      --primary-green: #00b467;
-      --primary-dark: #0e4749;
-      --light-green: #d9f5df;
-      --accent-green: #c1ecc8;
-      --hover-shadow: 0 8px 25px rgba(0,180,103,0.15);
-      --card-shadow: 0 4px 15px rgba(0,0,0,0.08);
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --primary-green: #00d4aa;
+      --primary-dark: #0a2e2a;
+      --accent-emerald: #10b981;
+      --accent-teal: #14b8a6;
+      --light-bg: #f0fdfa;
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --shadow-hover: 0 20px 40px rgba(0, 212, 170, 0.25);
+      --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.3);
+      --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      --blur: backdrop-filter: blur(20px);
     }
 
-    /* ===== Enhanced Banner ===== */
-    .q-header {
-      background: linear-gradient(135deg, var(--primary-green) 0%, #00a85d 100%);
-      color: #fff;
-      padding: 2rem 2.5rem;
-      border-radius: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      box-shadow: var(--card-shadow);
+    /* ===== Base Styles ===== */
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f766e 100%);
+      min-height: 100vh;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
     }
     
-    .q-header::before {
+    body::before {
       content: '';
-      position: absolute;
+      position: fixed;
       top: 0;
-      right: 0;
-      width: 100px;
-      height: 100px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 50%;
-      transform: translate(30px, -30px);
-    }
-    
-    .q-header::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
       left: 0;
-      width: 150px;
-      height: 150px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 50%;
-      transform: translate(-50px, 50px);
-    }
-    
-    .q-header h1 { 
-      font-size: 2.5rem; 
-      font-weight: 800; 
-      margin: 0;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      position: relative;
-      z-index: 2;
-    }
-    
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      position: relative;
-      z-index: 2;
-    }
-    
-    .header-controls .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.75rem;
-      font-weight: 600;
-      transition: var(--transition);
-      border: 2px solid rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-    }
-    
-    .header-controls .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      border-color: rgba(255,255,255,0.4);
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(0, 212, 170, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
     }
 
-    /* ===== Section Headers ===== */
-    .section-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid #f0f0f0;
-    }
-    
-    .section-header h5 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--primary-dark);
-      margin: 0;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .section-header::before {
-      content: '';
-      width: 4px;
-      height: 2rem;
-      background: linear-gradient(to bottom, var(--primary-green), var(--primary-dark));
-      border-radius: 2px;
-      margin-right: 1rem;
+    .container-fluid {
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
     }
 
-    /* ===== Queue Cards ===== */
-    .departments-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    
-    .dept-card {
-      background: linear-gradient(135deg, var(--primary-dark) 0%, #0a3d3f 100%);
-      border-radius: 1rem;
+    /* ===== Enhanced Header ===== */
+    .q-header {
+      background: linear-gradient(135deg, 
+        rgba(0, 212, 170, 0.9) 0%, 
+        rgba(20, 184, 166, 0.9) 50%, 
+        rgba(16, 185, 129, 0.9) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
       color: #fff;
-      padding: 1.5rem;
-      font-weight: 600;
-      text-align: center;
-      transition: var(--transition);
-      box-shadow: var(--card-shadow);
+      padding: 3rem 2.5rem;
+      border-radius: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3rem;
       position: relative;
       overflow: hidden;
-      min-height: 200px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      box-shadow: var(--shadow-soft);
     }
-    
-    .dept-card::before {
+
+    .q-header::before {
       content: '';
       position: absolute;
       top: -50%;
       right: -50%;
-      width: 100px;
-      height: 100px;
-      background: rgba(255,255,255,0.05);
+      width: 300px;
+      height: 300px;
+      background: conic-gradient(from 180deg, transparent, rgba(255,255,255,0.1), transparent);
       border-radius: 50%;
-      transition: var(--transition);
-    }
-    
-    .dept-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: var(--hover-shadow);
-    }
-    
-    .dept-card:hover::before {
-      transform: scale(1.5);
-      opacity: 0.1;
-    }
-    
-    .dept-name {
-      font-size: 1.2rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      position: relative;
-      z-index: 2;
-    }
-    
-    .dept-actions {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      position: relative;
-      z-index: 2;
-    }
-    
-    .dept-actions li {
-      margin-bottom: 0.75rem;
-    }
-    
-    .dept-actions li:last-child {
-      margin-bottom: 0;
-    }
-    
-    .action-btn, .action-link {
-      display: inline-block;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: var(--transition);
-      width: 100%;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-    }
-    
-    .action-btn:hover, .action-link:hover {
-      background: rgba(255,255,255,0.2);
-      color: #fff;
-      transform: translateY(-1px);
-    }
-    
-    .action-disabled {
-      color: rgba(255,255,255,0.4);
-      cursor: not-allowed;
-      border-color: rgba(255,255,255,0.1);
+      animation: rotate 20s linear infinite;
     }
 
-    /* ===== Plus Card ===== */
-    .plus-card {
-      background: linear-gradient(135deg, rgba(0,180,103,0.1) 0%, rgba(0,180,103,0.05) 100%);
-      border: 2px dashed var(--primary-green);
-      color: var(--primary-green);
+    .q-header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -30%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    .q-header h1 {
       font-size: 3rem;
-      font-weight: 300;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-decoration: none;
-      transition: var(--transition);
-      min-height: 200px;
-      border-radius: 1rem;
+      font-weight: 900;
+      margin: 0;
+      background: linear-gradient(45deg, #fff, #e6fffa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+      position: relative;
+      z-index: 2;
     }
 
-    .plus-card:hover {
-      background: linear-gradient(135deg, rgba(0,180,103,0.15) 0%, rgba(0,180,103,0.1) 100%);
-      border-color: #00a85d;
-      color: #00a85d;
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .header-controls .btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 1rem;
+      font-weight: 600;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .header-controls .btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .header-controls img {
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      transition: var(--transition);
+    }
+
+    .header-controls img:hover {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* ===== Category Headers ===== */
+    .category-section {
+      margin-bottom: 4rem;
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding: 2rem 2.5rem;
+      border-radius: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+    }
+
+    .category-header.window-a {
+      background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.9) 0%, 
+        rgba(37, 99, 235, 0.9) 100%);
+      box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+    }
+
+    .category-header.window-b {
+      background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.9) 0%, 
+        rgba(220, 38, 38, 0.9) 100%);
+      box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);
+    }
+
+    .category-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: var(--transition);
+    }
+
+    .category-header:hover::before {
+      left: 100%;
+    }
+
+    .category-header:hover {
       transform: translateY(-8px) scale(1.02);
-      box-shadow: var(--hover-shadow);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .category-header h3 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-grow: 1;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ===== Department Cards ===== */
+    .departments-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .dept-card {
+      background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.95) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      color: #ffffff !important;
+      padding: 2.5rem 2rem;
+      font-weight: 700;
+      text-align: center;
+      transition: var(--transition);
+      min-height: 250px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .dept-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary-green), var(--accent-teal));
+      transform: scaleX(0);
+      transition: var(--transition);
+    }
+
+    .dept-card::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: radial-gradient(circle, rgba(0, 212, 170, 0.2), transparent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: var(--transition);
+    }
+
+    .dept-card:hover {
+      transform: translateY(-12px) scale(1.05);
+      box-shadow: var(--shadow-hover);
+      background: linear-gradient(135deg, 
+        rgba(0, 212, 170, 0.15) 0%, 
+        rgba(15, 23, 42, 0.9) 50%, 
+        rgba(30, 41, 59, 0.9) 100%);
+    }
+
+    .dept-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .dept-card:hover::after {
+      width: 200px;
+      height: 200px;
+    }
+
+    .dept-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      position: relative;
+      z-index: 2;
+      color: #ffffff !important;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
     }
 
     /* ===== Statistics Panel ===== */
-    .token-panel { 
-      background: linear-gradient(135deg, var(--light-green) 0%, #e6f9ea 100%);
-      border-radius: 1rem; 
-      box-shadow: var(--card-shadow);
-      overflow: hidden;
+    .token-panel {
+      background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.95) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 2rem;
       position: sticky;
       top: 2rem;
-    }
-    
-    .token-box {
-      padding: 2rem 1.5rem;
-      text-align: center;
-      border-bottom: 1px solid var(--accent-green);
-      transition: var(--transition);
-      position: relative;
-    }
-    
-    .token-box:last-child { 
-      border-bottom: none; 
-    }
-    
-    .token-box:hover {
-      background: rgba(255,255,255,0.5);
-      transform: scale(1.02);
-    }
-    
-    .token-box h2 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      margin: 0 0 0.5rem 0;
-      color: var(--primary-green);
-      text-shadow: 0 2px 4px rgba(0,180,103,0.1);
-    }
-    
-    .token-box span {
-      display: block;
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--primary-dark);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
     }
 
-    /* ===== Responsive & Animations ===== */
-    @media (max-width: 991px) {
-      .token-panel { margin-top: 2rem; position: static; }
-      .q-header { padding: 1.5rem; flex-direction: column; gap: 1rem; text-align: center; }
-      .departments-grid { grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:1rem; }
-      .q-header h1 { font-size: 2rem; }
+    .token-box {
+      padding: 2.5rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
     }
-    @media (max-width: 576px) {
-      .departments-grid { grid-template-columns:1fr; }
-      .q-header { padding:1rem; }
+
+    .token-box:last-child {
+      border-bottom: none;
     }
-    .dept-card, .token-box, .plus-card { animation: fadeInUp 0.6s ease-out; }
+
+    .token-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.1), transparent);
+      transition: var(--transition);
+    }
+
+    .token-box:hover::before {
+      left: 100%;
+    }
+
+    .token-box:hover {
+      background: linear-gradient(135deg, 
+        rgba(0, 212, 170, 0.15) 0%, 
+        rgba(15, 23, 42, 0.95) 100%);
+      transform: scale(1.02);
+    }
+
+    .token-box h2 {
+      font-size: 3rem;
+      font-weight: 900;
+      margin: 0 0 0.5rem;
+      color: var(--primary-green) !important;
+      text-shadow: 0 0 30px rgba(0, 212, 170, 0.6);
+      position: relative;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .token-box span {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff !important;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 0.5rem;
+      opacity: 0.9;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ===== Animations ===== */
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+    }
+
     @keyframes fadeInUp {
-      from { opacity:0; transform:translateY(30px); }
-      to   { opacity:1; transform:translateY(0); }
+      from { 
+        opacity: 0; 
+        transform: translateY(50px) scale(0.9); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+      }
+    }
+
+    @keyframes slideInLeft {
+      from { 
+        opacity: 0; 
+        transform: translateX(-50px); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateX(0); 
+      }
+    }
+
+    .dept-card, .token-box { 
+      animation: fadeInUp 0.8s ease-out backwards;
+    }
+
+    .category-header {
+      animation: slideInLeft 0.6s ease-out backwards;
+    }
+
+    .dept-card:nth-child(even) { animation-delay: 0.1s; }
+    .dept-card:nth-child(3n) { animation-delay: 0.2s; }
+    .token-box:nth-child(2) { animation-delay: 0.1s; }
+    .token-box:nth-child(3) { animation-delay: 0.2s; }
+    .token-box:nth-child(4) { animation-delay: 0.3s; }
+
+    /* ===== Responsive Design ===== */
+    @media (max-width: 1200px) {
+      .departments-grid { 
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+        gap: 1.5rem;
+      }
+    }
+
+    @media (max-width: 991px) {
+      .departments-grid { 
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+      }
+      .q-header { 
+        flex-direction: column; 
+        text-align: center; 
+        gap: 1.5rem; 
+        padding: 2rem 1.5rem;
+      }
+      .q-header h1 { 
+        font-size: 2.5rem; 
+      }
+      .token-panel {
+        margin-top: 2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container-fluid { padding: 1rem; }
+      .departments-grid { 
+        grid-template-columns: 1fr; 
+        gap: 1rem;
+      }
+      .q-header { 
+        padding: 1.5rem 1rem; 
+        margin-bottom: 2rem;
+      }
+      .q-header h1 { 
+        font-size: 2rem; 
+      }
+      .category-header {
+        padding: 1.5rem;
+      }
+      .category-header h3 {
+        font-size: 1.8rem;
+      }
+      .dept-card {
+        min-height: 200px;
+        padding: 2rem 1.5rem;
+      }
+      .token-box {
+        padding: 2rem 1.5rem;
+      }
+      .token-box h2 {
+        font-size: 2.5rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .q-header h1 { 
+        font-size: 1.8rem; 
+      }
+      .header-controls {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .dept-card {
+        min-height: 180px;
+      }
+    }
+
+    /* ===== Custom Scrollbar ===== */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(45deg, var(--primary-green), var(--accent-teal));
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(45deg, var(--accent-teal), var(--primary-green));
     }
   </style>
 
+  {{-- Page Header --}}
   <div class="q-header">
-    <h1><i class="bi bi-list-check me-3"></i>Queue Management</h1>
+    <h1><i class="bi bi-list-check me-3"></i> Queue Management</h1>
     <div class="header-controls">
       <a href="{{ route('queue.history') }}" class="btn btn-light">
-        <i class="bi bi-clock-history me-2"></i>View History
+        <i class="bi bi-clock-history me-2"></i> View History
       </a>
       <img src="{{ asset('images/fabella-logo.png') }}"
-           width="50" height="50" alt="Fabella logo"
-           class="rounded-circle shadow-sm">
+           alt="Fabella logo"
+           class="rounded-circle">
     </div>
   </div>
 
   <div class="row">
-    {{-- === LEFT: queues grid === --}}
+    {{-- LEFT: windows & their departments --}}
     <div class="col-lg-9">
-      <div class="section-header">
-        <h5><i class="bi bi-list-ul"></i>Queues</h5>
-      </div>
-
-      <div class="departments-grid">
-        @foreach($queues as $queue)
+      @foreach($queues as $window)
+        <div class="category-section">
           @php
-            // grab the first un‐served token for this queue (if you still need it elsewhere)
-            $next = $queue->tokens()
-                          ->whereNull('served_at')
-                          ->orderBy('created_at')
-                          ->first();
+            $cls  = $window->name === 'Window A' ? 'window-a' : 'window-b';
+            $icon = $window->name === 'Window A' ? 'bi-window' : 'bi-window-stack';
           @endphp
-
-          <div class="dept-card">
-            <div class="dept-name">{{ $queue->name }}</div>
-
-            <ul class="dept-actions">
-              {{-- 1) Display --}}
-              <li>
-                <a href="{{ route('queue.admin_display', $queue) }}" class="action-link">
-                  <i class="bi bi-display me-2"></i>Display
-                </a>
-              </li>
-
-              {{-- 2) Manage (Delete) Tokens → Link to delete_list --}}
-              <li>
-                <a href="{{ route('queue.delete.list', $queue->id) }}" class="action-btn w-100 text-danger">
-                  <i class="bi bi-trash me-2"></i>Manage Tokens
-                </a>
-              </li>
-
-              {{-- 3) Add Token --}}
-              <li>
-                <form action="{{ route('queue.store', $queue) }}" method="POST" class="d-inline w-100">
-                  @csrf
-                  <button class="action-btn w-100" formtarget="_blank">
-                    <i class="bi bi-plus-circle me-2"></i>Add&nbsp;Token
-                  </button>
-                </form>
-              </li>
-
-              {{-- 4) Edit Next Token --}}
-              <li>
-                @if($next)
-                  <a href="{{ route('queue.tokens.edit', [$queue, $next]) }}" class="action-link">
-                    <i class="bi bi-pencil-square me-2"></i>Edit Next Token
-                  </a>
-                @else
-                  <span class="action-link action-disabled">
-                    <i class="bi bi-pencil-square me-2"></i>No Token to Edit
-                  </span>
-                @endif
-              </li>
-            </ul>
-          </div>
-        @endforeach
-
-        @can('create', App\Models\Queue::class)
-          <a href="{{ route('queue.create') }}" class="plus-card">
-            <div>
-              <i class="bi bi-plus-lg"></i>
-              <div style="font-size:.9rem; margin-top:.5rem; font-weight:600;">
-                Add Queue
-              </div>
-            </div>
+          {{-- Window header link --}}
+          <a href="{{ route('queue.admin_display', $window) }}"
+             class="category-header {{ $cls }}">
+            <h3>
+              <i class="{{ $icon }} me-3"></i>
+              {{ $window->name }}
+            </h3>
           </a>
-        @endcan
-      </div>
+
+          {{-- Department cards --}}
+          <div class="departments-grid">
+            @foreach($window->children as $dept)
+              <a href="{{ route('queue.admin_display', $dept) }}"
+                 class="dept-card">
+                <div class="dept-name">{{ $dept->name }}</div>
+              </a>
+            @endforeach
+          </div>
+        </div>
+      @endforeach
     </div>
 
-    {{-- === RIGHT: statistics panel === --}}
+    {{-- RIGHT: statistics panel --}}
     <div class="col-lg-3">
-      <div class="section-header">
-        <h5><i class="bi bi-bar-chart"></i>Statistics</h5>
-      </div>
-
       <div class="token-panel">
         <div class="token-box">
           <h2>{{ number_format($summary['total']) }}</h2>
-          <span><i class="bi bi-ticket-perforated me-2"></i>Total Tokens</span>
+          <span><i class="bi bi-ticket-perforated me-2"></i> Total Tokens</span>
         </div>
         <div class="token-box">
           <h2>{{ number_format($summary['pending']) }}</h2>
-          <span><i class="bi bi-hourglass-split me-2"></i>Pending</span>
+          <span><i class="bi bi-hourglass-split me-2"></i> Pending</span>
         </div>
         <div class="token-box">
           <h2>{{ number_format($summary['complete']) }}</h2>
-          <span><i class="bi bi-check-circle me-2"></i>Completed</span>
+          <span><i class="bi bi-check-circle me-2"></i> Completed</span>
         </div>
+        @foreach($queues as $window)
+          @php
+            $count = $window->children()->count();
+            $lbl   = $window->name . ' Departments';
+            $icon  = $window->name === 'Window A' ? 'bi-window' : 'bi-window-stack';
+          @endphp
+          <div class="token-box">
+            <h2>{{ $count }}</h2>
+            <span><i class="{{ $icon }} me-2"></i> {{ $lbl }}</span>
+          </div>
+        @endforeach
       </div>
     </div>
   </div>

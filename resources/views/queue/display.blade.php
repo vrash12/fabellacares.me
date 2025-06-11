@@ -390,7 +390,7 @@
   {{-- ─── ENHANCED HEADER ──────────────────────────────────────────────────── --}}
   <div class="topbar">
     {{-- “Back” button → go back to queue selection --}}
-    <a href="{{ route('queue.general_select') }}" class="btn-back">
+    <a href="{{ route('queue.general') }}" class="btn-back">
       <i class="fas fa-arrow-left me-1"></i> Back
     </a>
 

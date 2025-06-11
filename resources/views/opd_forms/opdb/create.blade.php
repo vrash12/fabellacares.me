@@ -1,5 +1,12 @@
 {{--resources/views/opd_forms/opdb/create.blade.php--}}
-@extends('layouts.admin')
+@php
+    $layout = auth()->user()->role === 'encoder'
+            ? 'layouts.encoder'
+            : 'layouts.admin';
+@endphp
+
+@extends($layout)
+
 
 @section('content')
   <h1 class="mb-4">New OPD-OB Record</h1>

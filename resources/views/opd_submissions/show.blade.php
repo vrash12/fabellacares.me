@@ -1,4 +1,11 @@
-@extends('layouts.admin')
+@php
+    $layout = auth()->user()->role === 'encoder'
+            ? 'layouts.encoder'
+            : 'layouts.admin';
+@endphp
+
+@extends($layout)
+
 
 @section('content')
 <div class="container col-md-8">
