@@ -45,6 +45,7 @@ class InternalMedicineTriageController extends Controller
         $template = OpdForm::where('form_no', 'TRG-IM-01')->firstOrFail();
 
         $rules = [
+            'patient_id' => 'required|exists:patients,id',
             'chief_complaint'               => 'nullable|string|max:255',
             'onset'                         => 'nullable|string|max:255',
             'duration'                      => 'nullable|string|max:255',
@@ -76,6 +77,7 @@ class InternalMedicineTriageController extends Controller
             'form_id' => $template->id,
             'user_id' => auth()->id(),
             'answers' => $data,
+             'patient_id' => $data['patient_id'], 
         ]);
 
         return redirect()
@@ -112,6 +114,7 @@ class InternalMedicineTriageController extends Controller
     public function update(Request $request, OpdSubmission $submission)
     {
         $rules = [
+            'patient_id' => 'required|exists:patients,id',
             'chief_complaint'               => 'nullable|string|max:255',
             'onset'                         => 'nullable|string|max:255',
             'duration'                      => 'nullable|string|max:255',

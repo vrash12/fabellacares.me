@@ -16,15 +16,25 @@ class FollowUpOpdFormController extends Controller
         $this->middleware('auth');
     }
 
-    public function index()
-    {
-        $submissions = OpdSubmission::with('patient.user','form')
-            ->whereHas('form', fn($q) => $q->where('form_no','OPD-F-08'))
-            ->latest()
-            ->get();
+public function index()
+{
+    // load queues indexed by ID for fast lookups in the view
+    $queues = Queue::all()->keyBy('id');
 
-        return view('opd_forms.follow_up.index', compact('submissions'));
-    }
+    // grab all follow-ups for this form, newest first
+    $allSubs = OpdSubmission::with('patient.user','form')
+        ->whereHas('form', fn($q) => $q->where('form_no','OPD-F-08'))
+        ->orderBy('created_at','desc')
+        ->get();
+
+    // now take only the first submission per patient_id
+    $submissions = $allSubs
+        ->unique('patient_id')  // keeps the first (newest) per patient_id
+        ->values();             // reindex 0,1,2…
+
+    return view('opd_forms.follow_up.index', compact('submissions','queues'));
+}
+
 
     public function create(Request $request)
     {
@@ -66,13 +76,14 @@ class FollowUpOpdFormController extends Controller
 
         $template = OpdForm::where('form_no','OPD-F-08')->firstOrFail();
 
-        $submission = OpdSubmission::create([
-            'form_id'      => $template->id,
-            'user_id'      => auth()->id(),
-            'patient_id'   => $validated['patient_id'],
-            'department_id'=> $validated['department_id'] ?? null,
-            'answers'      => $validated,
-        ]);
+     $submission = OpdSubmission::create([
+  'form_id'       => $template->id,
+  'user_id'       => auth()->id(),
+  'patient_id'    => $validated['patient_id'],
+  'department_id' => $validated['department_id'], // now non-null
+  'answers'       => $validated,
+]);
+
 
         Visit::create([
             'patient_id'    => $validated['patient_id'],

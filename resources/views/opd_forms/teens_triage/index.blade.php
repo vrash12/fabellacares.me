@@ -1,3 +1,4 @@
+{{--resources/views/opd_forms/teens_triage/index.blade.php--}}
 @php
     $layout = auth()->user()->role === 'encoder'
             ? 'layouts.encoder'

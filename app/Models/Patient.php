@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Visit;
 
 class Patient extends Model
 {
@@ -75,9 +76,13 @@ public function tokens(): HasManyThrough
                     ->latest();
     }
 
-public function visits()
+ public function visits(): HasMany
+    {
+        return $this->hasMany(Visit::class, 'patient_id');
+    }
+public function triageForms()
 {
-    return $this->hasMany(PatientVisit::class);
+    return $this->hasMany(TriageForm::class);
 }
 
 }

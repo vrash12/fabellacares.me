@@ -249,6 +249,48 @@ body {
     color: #212529 !important;                 /* Bootstrap’s default body colour */
 }
 
+.select2-dropdown {
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
+}
+
+.select2-results {
+    background-color: #ffffff !important;
+}
+
+.select2-results__options {
+    background-color: #ffffff !important;
+}
+
+.select2-results__option {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    padding: 8px 12px !important;
+}
+
+.select2-results__option--highlighted {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+}
+
+.select2-results__option--selected {
+    background-color: #e9ecef !important;
+    color: #212529 !important;
+}
+
+/* Also ensure the search input is visible */
+.select2-search__field {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid #ced4da !important;
+}
+
+/* Fix the "No results found" message */
+.select2-results__message {
+    background-color: #ffffff !important;
+    color: #6c757d !important;
+}
+
 .modal-backdrop.show {
     background-color: rgba(0,0,0,0.85);   /* 85 % black */
     backdrop-filter: blur(4px);
@@ -358,6 +400,12 @@ body {
   100% { transform: rotate(360deg); }
 }
 
+
+.select2-selection__rendered {        
+    color: #212529 !important;        
+}
+
+
   </style>
 
 </head>
@@ -376,12 +424,26 @@ body {
       <a href="{{ route('queue.delete.list', $queue) }}" class="btn-back">
         <i class="bi bi-trash"></i> Manage
       </a>
-      <button type="button"
-              class="btn-back"
-              data-bs-toggle="modal"
-              data-bs-target="#addTokenModal">
-        <i class="bi bi-plus-circle"></i> Add Token
-      </button>
+        @if(is_null($queue->parent_id))
+  <form action="{{ route('queue.issue', $queue) }}"
+        method="POST"
+        class="d-inline teambar-form"
+        target="_blank">
+    @csrf
+    <button type="submit" class="btn-back"
+            onclick="return confirm('Issue a new token for {{ $queue->name }}?');">
+      <i class="bi bi-plus-circle"></i> Add Token
+    </button>
+  </form>
+@else
+        <button type="button"
+                class="btn-back"
+                data-bs-toggle="modal"
+                data-bs-target="#addTokenModal">
+          <i class="bi bi-plus-circle"></i> Add Token
+        </button>
+      @endif
+
       @php
         $next = $queue->tokens()
                       ->whereNull('served_at')
@@ -530,27 +592,29 @@ body {
       </div>
     </div>
   </div>
-
+@if(! is_null($queue->parent_id))
   {{-- ADD TOKEN MODAL --}}
   <div class="modal fade" id="addTokenModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <form id="addTokenForm"
-            method="POST"
-            action="{{ route('queue.store', $queue) }}"
-            class="modal-content">
-        @csrf
+    <form id="addTokenForm"
+      method="POST"
+      action="{{ route('queue.store', $queue) }}"
+      class="modal-content"
+      target="_blank">         
+    @csrf
         <div class="modal-header">
           <h5 class="modal-title">Issue New Token</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <label for="patientSelect" class="form-label">Patient</label>
-    <select id="patientSelect" class="form-select" style="width:100%" required>
-    <option value="">‒ search patient ‒</option>
-    <option value="1">Alice Lee</option>
-    <option value="2">Bob Reyes</option>
-</select>
-
+  <select id="patientSelect"
+        name="patient_id"               
+        class="form-select"
+        style="width:100%"
+        required>
+        <option value="">‒ search patient ‒</option>
+      </select>
 
         </div>
         <div class="modal-footer">
@@ -560,46 +624,40 @@ body {
       </form>
     </div>
   </div>
- <!-- jQuery, Bootstrap and Select2 JS -->
+  @endif
+<!-- jQuery, Bootstrap and Select2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-  // Show loading overlay on any header‐form submit
+$(function() {
+  // 1️⃣ Show loading overlay on any header‐form submit
   document.querySelectorAll('.teambar-form').forEach(form => {
     form.addEventListener('submit', () => {
       document.getElementById('loadingOverlay').classList.add('active');
     });
   });
 
-// Initialize Select2 for the patient picker when the DOM is ready
-$(document).ready(function() {
+  // 2️⃣ Initialize Select2 for the patient picker
   $('#patientSelect').select2({
     theme: 'bootstrap-5',
     dropdownParent: $('#addTokenModal'),
-    placeholder: '‒ search patient ‒',          // keeps text visible
-    allowClear: false,                          // optional
+    placeholder: '‒ search patient ‒',
     minimumInputLength: 2,
-    width: '100%',                              // makes container span full width
     ajax: {
-      url: '{{ route("patients.search") }}', // URL to fetch patients
+      url: '{{ route("patients.search") }}',
       dataType: 'json',
       delay: 250,
-      data: function(params) {
-        return { q: params.term };            // send the search term to server
-      },
-      processResults: function(data) {
-        return { results: data.results };     // process the server response
-      }
+      data: params => ({ q: params.term }),
+      processResults: data => ({
+        results: data.results   // expects each item to have { id, text }
+      }),
+      cache: true
     }
   });
-});
 
-
-  });
-
-  // Live‐polling to refresh the Queue List and “Now Serving”
+  // 3️⃣ Live‐polling to refresh the Queue List and “Now Serving”
   (function() {
     const statusUrl = "{{ route('queue.status', $queue) }}";
     const listEl    = document.getElementById('queueList');
@@ -617,12 +675,12 @@ $(document).ready(function() {
 
         // Rebuild the left‐hand queue list
         listEl.innerHTML = '';
-        pending.slice(0,5).forEach((p,i) => {
+        pending.slice(0,5).forEach((p, i) => {
           listEl.insertAdjacentHTML('beforeend', `
             <div class="queue-slot">
               <div class="queue-number">${i+1}</div>
-              <div class="queue-code" style="opacity:${p?1:0.3}">
-                ${p.code||'—'}<small>${p.patient_name||''}</small>
+              <div class="queue-code" style="opacity:${p ? 1 : 0.3}">
+                ${p.code || '—'}<small>${p.patient_name || ''}</small>
               </div>
             </div>`);
         });
@@ -633,12 +691,12 @@ $(document).ready(function() {
         // Update timestamp
         const now = new Date();
         tsSpan.textContent = now.toLocaleString(undefined, {
-          day:   '2-digit',
-          month: 'long',
-          year:  'numeric',
-          hour:  '2-digit',
-          minute:'2-digit',
-          second:'2-digit'
+          day:    '2-digit',
+          month:  'long',
+          year:   'numeric',
+          hour:   '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
         }) + ' | Now Serving';
 
       } catch (e) {
@@ -648,10 +706,11 @@ $(document).ready(function() {
       }
     }
 
-    // Initial load and polling every 4 seconds
+    // Kick off
     setTimeout(refreshQueue, 1000);
     setInterval(refreshQueue, 4000);
   })();
+});
 </script>
 
 

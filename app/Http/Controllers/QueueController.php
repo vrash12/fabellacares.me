@@ -8,9 +8,11 @@ use App\Models\Department;
 use App\Models\Token;
 use App\Models\Visit;
 use App\Models\Queue;
+use Illuminate\Support\Str;
 use App\Models\Patient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use App\Models\OpdSubmission;
 
 class QueueController extends Controller
@@ -107,10 +109,20 @@ class QueueController extends Controller
     return response()->json($stats);
 } 
   public function resetCounter(Queue $queue)
-{
-    $queue->update(['token_counter' => 0]);
-    return back()->with('success', "Token counter for “{$queue->name}” reset to 0.");
-}
+    {
+        DB::transaction(function () use ($queue) {
+            // soft-delete every token for this queue (served or not)
+            Token::where('queue_id', $queue->id)->delete();
+
+            // reset the auto-incrementing counter back to zero
+            $queue->update(['token_counter' => 0]);
+        });
+
+        return back()->with(
+            'success',
+            "Queue “{$queue->name}” was cleared and the counter reset to 001."
+        );
+    }
 public function forPatientPrint(Patient $patient, Token $token)
 {
     // Eager load queue, submission, and patient relationship
@@ -129,8 +141,8 @@ public function forPatientPrint(Patient $patient, Token $token)
         $patientName = $patient->name;
     }
 
-    // Set timestamp
-    $timestamp = now()->format('F j, Y • g:i a');
+    $timestamp = Carbon::now('Asia/Manila')
+                   ->format('F j, Y • g:i A');
 
     // Return the print view with the token, patient name, and timestamp
     return view('queue.print_patient', [
@@ -258,6 +270,14 @@ public function patientStore(Request $req, Patient $patient)
             'submission_id' => $submission->id,  // Ensure this is valid
             'code' => $code,
         ]);
+        Visit::create([
+    'patient_id'    => $patient->id,
+    'visited_at'    => now(),
+    'department_id' => $queue->id,
+    'queue_id'      => $queue->id,
+    'token_id'      => $token->id,
+]);
+
     } else {
         // Handle the case where there's no submission for this patient
         return back()->with('error', 'No submission found for this patient.');
@@ -277,14 +297,14 @@ public function patientStore(Request $req, Patient $patient)
 
  public function index()
 {
-    // only parents (“windows”) that still have **any** pending tokens
-    // either in themselves OR in one of their children
  $queues = Queue::withCount(['tokens as pending_count' => function ($q) {
                $q->whereNull('served_at');
            }])
            ->whereNull('parent_id')
+           ->where('name', '!=', 'General')    // ← explicitly drop “General”
            ->orderBy('name')
            ->get();
+
 
     $summary = [
         'total'    => Token::count(),
@@ -294,20 +314,52 @@ public function patientStore(Request $req, Patient $patient)
 
     return view('queue.index', compact('queues','summary'));
 }
-    public function store(Request $request, Queue $queue)
-    {
-        DB::transaction(function() use ($queue, &$token) {
-            $queue->increment('token_counter');
-            $queue->refresh();
+public function store(Request $request, Queue $queue)
+{
+    // 1) Validate input
+    $data = $request->validate([
+        'patient_id' => 'required|exists:patients,id',
+    ]);
 
-            $code = $this->prefixFor($queue->name)
-                  . str_pad($queue->token_counter, 4, '0', STR_PAD_LEFT);
+    // 2) Find the latest OPD submission for that patient
+    $submission = OpdSubmission::where('patient_id', $data['patient_id'])
+                      ->latest('created_at')
+                      ->firstOrFail();
 
-            $token = $queue->tokens()->create(['code' => $code]);
-        });
+    // 3) Prevent duplicate live tokens
+    $already = Token::where('queue_id', $queue->id)
+                    ->where('submission_id', $submission->id)
+                    ->whereNull('served_at')
+                    ->exists();
 
-        return redirect()->route('queue.tokens.print', $token);
+    if ($already) {
+        return back()->with('error', 'This patient already has a live token.');
     }
+
+    // 4) Generate next code
+    $next   = Token::where('queue_id', $queue->id)->count() + 1;
+    $prefix = strtoupper(substr($queue->short_name ?: $queue->name, 0, 1));
+    $code   = $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
+
+    // 5) Create the token
+    /** @var \App\Models\Token $token */
+ $token = Token::create([
+    'queue_id'      => $queue->id,
+    'submission_id' => $submission->id,
+    'patient_id'    => $submission->patient_id,   
+    'code'          => $code,
+]);
+Visit::create([
+  'patient_id'    => $submission->patient_id,
+  'visited_at'    => now(),
+  'department_id' => $queue->id,
+  'queue_id'      => $queue->id,
+  'token_id'      => $token->id,
+]);
+    // 6) Redirect the **new tab** to the print page
+    //    (your form's `target="_blank"` ensures the admin page stays put)
+    return redirect()->route('queue.print', $token);
+}
 
     public function edit(Queue $queue, $tokenId)
     {
@@ -345,10 +397,10 @@ public function patientStore(Request $req, Patient $patient)
 
     public function deleteList(Queue $queue)
     {
-        $tokens = $queue->tokens()
-                        ->whereNull('served_at')
-                        ->orderBy('created_at','asc')
-                        ->get();
+$tokens = $queue->tokens()
+                ->whereNull('served_at')
+                ->orderBy('created_at','asc')
+                ->paginate(10);
 
         return view('queue.delete_list', compact('queue','tokens'));
     }
@@ -539,21 +591,45 @@ public function patientStore(Request $req, Patient $patient)
 
 public function printReceipt(Token $token)
 {
-    // eager-load both queue and patient
-    $token->load('queue', 'submission.patient');
+    $token->load('queue', 'submission.patient', 'patient');  // ★ add 'patient'
 
-    // safe-extract the name
-    $patientName = optional($token->submission->patient)->name;
+    // take it from submission → patient *or* straight from token
+    $patientName = $token->submission?->patient?->name
+                   ?? $token->patient?->name
+                   ?? '';
 
-    // formatting your timestamp
-    $timestamp = now()->format('F j, Y • g:i A');
-
-    return view('queue.print', compact(
-        'token',
-        'patientName',
-        'timestamp'
-    ));
+    return view('queue.print', [
+        'token'       => $token,
+        'patientName' => $patientName,
+        'timestamp'   => now()->format('F j, Y • g:i A'),
+    ]);
 }
+
+public function issue(Queue $queue)
+{
+    // only parent windows
+    if ($queue->parent_id !== null) {
+        return back()->withErrors('Only windows may be issued directly.');
+    }
+
+    // generate next code
+    $next   = $queue->token_counter + 1;
+    $prefix = strtoupper(substr($queue->name, 0, 1));
+    $code   = $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
+
+    // create token
+    $token = Token::create([
+        'queue_id' => $queue->id,
+        'code'     => $code,
+    ]);
+
+    // bump counter
+    $queue->increment('token_counter');
+
+    // now redirect to the print route for that token
+    return redirect()->route('queue.print', $token);
+}
+
 
 
     //

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OpdForm;
 use App\Models\OpdSubmission;
+use PDF; 
 use Illuminate\Http\Request;
 
 class OpdSubmissionController extends Controller
@@ -61,5 +62,17 @@ public function store(Request $request, OpdForm $opd_form)
     {
         $opd_submission->delete();
         return back()->with('success','Submission deleted.');
+    }
+     public function exportPdf(OpdSubmission $submission)
+    {
+        $submission->load('form','user');
+        $pdf = PDF::loadView(
+            'opd_forms.pdf.submission',
+            compact('submission')
+        )->setPaper('a4','portrait');
+
+        return $pdf->download(
+            "{$submission->form->form_no}-{$submission->id}.pdf"
+        );
     }
 }

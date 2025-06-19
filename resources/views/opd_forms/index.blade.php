@@ -186,6 +186,7 @@
         .table-row { grid-template-columns: 1fr; text-align: center; }
     }
 </style>
+
 <div class="page-container">
   <div class="container-fluid">
 
@@ -194,7 +195,7 @@
       <div class="header-content">
         <div>
           <h1 class="header-title">OPD Forms Management</h1>
-          <p class="header-subtitle">Manage all OPD &amp; triage records efficiently</p>
+          <p class="header-subtitle">Manage all OPD & triage records efficiently</p>
         </div>
         <img src="{{ asset('images/fabella-logo.png') }}"
              alt="Fabella Logo"
@@ -205,10 +206,10 @@
     {{-- TABLE --}}
     <div class="forms-table-container">
       <div class="table-header">
-        <div><i class="fas fa-file-medical-alt me-2"></i>Form Name</div>
-        <div><i class="fas fa-hashtag me-2"></i>Form No.</div>
-        <div><i class="fas fa-building me-2"></i>Department</div>
-        <div><i class="fas fa-cogs me-2"></i>Actions</div>
+        <div>Form Name</div>
+        <div>Form No.</div>
+        <div>Department</div>
+        <div>Actions</div>
       </div>
 
       @forelse($forms as $form)
@@ -216,22 +217,19 @@
         <div class="table-row">
           <div class="form-name">{{ $form->name }}</div>
           <div><span class="form-number">{{ $form->form_no }}</span></div>
-      <div>
-  <span class="department-badge">
-    {{ optional($form->queue)->name ?? $form->department }}
-  </span>
-</div>
-
+          <div><span class="department-badge">{{ optional($form->queue)->name ?? $form->department }}</span></div>
+ 
           <div class="table-actions">
-
-            @if(str_contains($n,'opd-ob'))
+            {{-- OPD-OB --}}
+            @if(str_contains($n,'opd'))
               <a href="{{ route('patients.index') }}" class="btn-action btn-view">
-                <i class="fas fa-eye"></i> View OPD-OB
+                <i class="fas fa-eye"></i> View OPD
               </a>
               <a href="{{ route('ob-opd-forms.create') }}" class="btn-action btn-new">
-                <i class="fas fa-plus"></i> New OPD-OB
+                <i class="fas fa-plus"></i> New OPD
               </a>
 
+            {{-- High-Risk --}}
             @elseif(str_contains($n,'high risk'))
               <a href="{{ route('high-risk-opd-forms.index') }}" class="btn-action btn-view">
                 <i class="fas fa-eye"></i> View High-Risk
@@ -240,14 +238,16 @@
                 <i class="fas fa-plus"></i> New High-Risk
               </a>
 
-            @elseif(str_contains($n,'follow up') || str_contains($n,'follow-up'))
+            {{-- Follow-Up --}}
+            @elseif(str_contains($n,'follow up')||str_contains($n,'follow-up'))
               <a href="{{ route('follow-up-opd-forms.index') }}" class="btn-action btn-view">
-                <i class="fas fa-eye"></i> View Follow-Ups
+                <i class="fas fa-eye"></i> View Follow-Up
               </a>
               <a href="{{ route('follow-up-opd-forms.create') }}" class="btn-action btn-new">
                 <i class="fas fa-plus"></i> New Follow-Up
               </a>
 
+            {{-- Consultation --}}
             @elseif(str_contains($n,'consultation'))
               <a href="{{ route('consult.internal.index') }}" class="btn-action btn-view">
                 <i class="fas fa-eye"></i> View Consultation
@@ -256,7 +256,8 @@
                 <i class="fas fa-plus"></i> New Consultation
               </a>
 
-            @elseif(str_contains($n,'internal medicine'))
+         {{-- Internal Medicine Triage Template --}}
+            @elseif($form->form_no === 'TRG-IM-01')
               <a href="{{ route('triage.internal.index') }}" class="btn-action btn-view">
                 <i class="fas fa-eye"></i> View IM Triage
               </a>
@@ -264,7 +265,17 @@
                 <i class="fas fa-plus"></i> New IM Triage
               </a>
 
-            @elseif(str_contains($n,'ob-gyn') || str_contains($n,'ob gyn'))
+            {{-- General “Triage Forms” --}}
+            @elseif($form->form_no === 'TRG-GEN-01')
+              <a href="{{ route('opd_forms.triage.index') }}" class="btn-action btn-view">
+                <i class="fas fa-eye"></i> View Triage
+              </a>
+              <a href="{{ route('opd_forms.triage.create') }}" class="btn-action btn-new">
+                <i class="fas fa-plus"></i> New Triage
+              </a>
+
+            {{-- OB-GYN Triage --}}
+            @elseif(str_contains($n,'ob-gyn')||str_contains($n,'ob gyn'))
               <a href="{{ route('triage.obgyn.index') }}" class="btn-action btn-view">
                 <i class="fas fa-eye"></i> View OB-GYN
               </a>
@@ -272,6 +283,7 @@
                 <i class="fas fa-plus"></i> New OB-GYN
               </a>
 
+            {{-- Teens --}}
             @elseif(str_contains($n,'teen'))
               <a href="{{ route('triage.teens.index') }}" class="btn-action btn-view">
                 <i class="fas fa-eye"></i> View Teens
@@ -280,6 +292,7 @@
                 <i class="fas fa-plus"></i> New Teen Record
               </a>
 
+            {{-- Pedia --}}
             @elseif(str_contains($n,'pedia'))
               <a href="{{ route('triage.pedia.index') }}" class="btn-action btn-view">
                 <i class="fas fa-eye"></i> View Pedia
@@ -287,16 +300,18 @@
               <a href="{{ route('triage.pedia.create') }}" class="btn-action btn-new">
                 <i class="fas fa-plus"></i> New Pedia
               </a>
+{{-- Fallback --}}
+@else
+  {{-- Admin “show” of template --}}
+  <a href="{{ route('opd_forms.show', $form) }}" class="btn-action btn-view">
+    <i class="fas fa-eye"></i> View Template
+  </a>
 
-            @else
-              {{-- fallback to generic --}}
-              <a href="{{ route('opd_forms.show', $form) }}" class="btn-action btn-view">
-                <i class="fas fa-eye"></i> View Template
-              </a>
-              <a href="{{ route('opd_forms.create', $form) }}" class="btn-action btn-new">
-                <i class="fas fa-plus"></i> Fill &amp; Submit
-              </a>
-            @endif
+  {{-- Fill & Submit --}}
+  <a href="{{ route('opd_forms.fill', $form) }}" class="btn-action btn-new">
+    <i class="fas fa-plus"></i> Fill & Submit
+  </a>
+@endif
 
           </div>
         </div>
@@ -315,15 +330,15 @@
 
 @push('scripts')
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.table-row').forEach((row, i) => {
-      row.style.opacity   = '0';
-      row.style.transform = 'translateY(20px)';
-      setTimeout(() => {
-        row.style.transition = 'all .5s ease';
-        row.style.opacity    = '1';
-        row.style.transform  = 'translateY(0)';
-      }, i * 100);
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('.table-row').forEach((row,i)=>{
+      row.style.opacity='0';
+      row.style.transform='translateY(20px)';
+      setTimeout(()=>{
+        row.style.transition='all .5s ease';
+        row.style.opacity='1';
+        row.style.transform='translateY(0)';
+      },i*100);
     });
   });
 </script>

@@ -1,8 +1,4 @@
-
-
-
-
-// resources/views/opd_forms/internal_consultation/index.blade.php
+{{-- resources/views/opd_forms/internal_consultation/index.blade.php --}}
 @extends('layouts.admin')
 
 @section('content')

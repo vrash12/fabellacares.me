@@ -1,11 +1,14 @@
 @php
     $form = $opd_form ?? null;
 
-    if (! function_exists('fv')) {
-        function fv(string $key, $form) {
-            return old($key, data_get($form, "data.{$key}", ''));
-        }
+ if (! function_exists('fv')) {
+    function fv(string $key, $form) {
+        // look in old() first, then in $form->answers[ $key ], or empty string/array
+        $default = data_get($form, "answers.{$key}", is_array(old($key)) ? [] : '');
+        return old($key, $default);
     }
+}
+
 
     $left = [
         '# SCARRED UTERUS / PREVIOUS CESAREAN' => 'scarred_uterus',

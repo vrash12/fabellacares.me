@@ -198,45 +198,9 @@
       </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="filter-card card mb-4 fade-in">
-      <div class="card-body">
-        <form class="row g-3 align-items-end" method="GET" action="{{ route('reports.index') }}">
-          <div class="col-md-3">
-            <label class="form-label text-primary fw-semibold mb-2">
-              <i class="bi bi-calendar-event me-1"></i>From Date
-            </label>
-            <input
-              type="date"
-              name="from"
-              value="{{ $dateFrom }}"
-              class="form-control form-control-custom"
-            >
-          </div>
-          <div class="col-md-3">
-            <label class="form-label text-primary fw-semibold mb-2">
-              <i class="bi bi-calendar-check me-1"></i>To Date
-            </label>
-            <input
-              type="date"
-              name="to"
-              value="{{ $dateTo }}"
-              class="form-control form-control-custom"
-            >
-          </div>
-          <div class="col-md-3">
-            <button type="submit" class="btn btn-primary-custom w-100">
-              <i class="bi bi-funnel me-2"></i>Apply Filter
-            </button>
-          </div>
-          <div class="col-md-3">
-            <button id="verifyBtn" type="button" class="btn btn-verify w-100 pulse-animation">
-              <i class="bi bi-shield-check me-2"></i>Verify Data
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+  
+
+{{-- This is the fixed section for the "Finished Queues by Department" table --}}
 
 <div class="main-report-card card mb-5 fade-in">
   <div class="card-header">
@@ -248,96 +212,140 @@
       </div>
     </div>
   </div>
+
+  {{-- move filter form inside this card --}}
+  <div class="card-body">
+    <form class="row g-3 align-items-end mb-4" method="GET" action="{{ route('reports.index') }}">
+      <div class="col-md-4">
+        <label class="form-label text-primary fw-semibold mb-1"><i class="bi bi-calendar-event me-1"></i> From</label>
+        <input type="date"
+       name="from"
+       value="{{ $dateFromIso }}"
+       class="form-control form-control-custom">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label text-primary fw-semibold mb-1"><i class="bi bi-calendar-check me-1"></i> To</label>
+   <input type="date"
+       name="to"
+       value="{{ $dateToIso }}"
+       class="form-control form-control-custom">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary-custom flex-fill">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+        <button id="verifyBtn" type="button" class="btn btn-verify flex-fill">
+          <i class="bi bi-shield-check me-1"></i> Verify
+        </button>
+      </div>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-custom table-striped mb-0">
+    <thead>
+  <tr>
+    <th><i class="bi bi-building me-2"></i>Department</th>
+    <th><i class="bi bi-check2-all me-2"></i>Served Tokens</th>
+  </tr>
+</thead>
+
+<tbody>
+  @forelse($deptStats as $dept)
+    <tr>
+      <td class="fw-medium">{{ $dept->name }}</td>
+      <td>
+        <span class="badge bg-success fs-6 px-3 py-2">
+          {{ $dept->served_count }}
+        </span>
+      </td>
+    </tr>
+  @empty
+    <tr>
+      <td colspan="2" class="text-center text-muted">
+        No finished queues in this date range.
+      </td>
+    </tr>
+  @endforelse
+</tbody>
+
+      </table>
+    </div>
+  </div>
+
+  <div class="card-footer bg-light d-flex justify-content-start">
+    <div class="export-buttons">
+      <a href="{{ route('reports.tokens.excel',['from'=>$dateFrom,'to'=>$dateTo]) }}"
+         class="btn btn-success me-2">
+         <i class="bi bi-file-earmark-spreadsheet me-1"></i>Excel
+      </a>
+      <a href="{{ route('reports.tokens.pdf',['from'=>$dateFrom,'to'=>$dateTo]) }}"
+         class="btn btn-danger">
+         <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+
+   <!-- 2) NEW: Main Report: Daily Staff Schedules Overview -->
+<div class="main-report-card card mb-5 fade-in">
+  <div class="card-header">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-calendar-fill fs-4 me-3"></i>
+      <div>
+        <h4 class="mb-1">Daily Staff Schedules Overview</h4>
+        <small class="opacity-75">Number of schedules assigned per day</small>
+      </div>
+    </div>
+  </div>
   <div class="card-body p-0">
     <div class="table-responsive">
       <table class="table table-custom table-striped mb-0">
         <thead>
           <tr>
-            <th><i class="bi bi-building me-2"></i>Department</th>
-            <th><i class="bi bi-check2-all me-2"></i>Served Tokens</th>
+            <th><i class="bi bi-calendar me-2"></i>Date</th>
+            <th><i class="bi bi-clock me-2"></i>Total Schedules</th>
           </tr>
         </thead>
         <tbody>
-          @foreach(\App\Models\Queue::whereNotNull('parent_id')->orderBy('name')->get() as $department)
+          @forelse($scheduleStats as $s)
             <tr>
-              <td class="fw-medium">{{ $department->name }}</td>
+              <td class="fw-medium">{{ \Carbon\Carbon::parse($s->day)->format('M d, Y') }}</td>
               <td>
-                <span class="badge bg-success fs-6 px-3 py-2">
-                  {{ $department->tokens()->whereNotNull('served_at')->count() }}
-                </span>
+                <span class="badge bg-secondary fs-6 px-3 py-2">{{ $s->total }}</span>
               </td>
             </tr>
-          @endforeach
+          @empty
+            <tr>
+              <td colspan="2" class="text-center text-muted">
+                No schedules found in this date range.
+              </td>
+            </tr>
+          @endforelse
         </tbody>
       </table>
     </div>
   </div>
-  <a href="{{ route('reports.tokens.excel',['from'=>$dateFrom,'to'=>$dateTo]) }}"
-   class="btn btn-success">
-   <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export Excel
-</a>
-<a href="{{ route('reports.tokens.pdf',['from'=>$dateFrom,'to'=>$dateTo]) }}"
-   class="btn btn-danger">
-   <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
-</a>
-
+  <div class="card-footer bg-light d-flex justify-content-start">
+    <div class="export-buttons">
+      <a
+        href="{{ route('reports.schedules.excel', ['from' => $dateFrom, 'to' => $dateTo]) }}"
+        class="btn btn-success me-2"
+      >
+        <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+        Export Schedules (Excel)
+      </a>
+      <a
+        href="{{ route('reports.schedules.pdf', ['from' => $dateFrom, 'to' => $dateTo]) }}"
+        class="btn btn-danger"
+      >
+        <i class="bi bi-file-earmark-pdf me-2"></i>
+        Export Schedules (PDF)
+      </a>
+    </div>
+  </div>
 </div>
 
-    <!-- 2) NEW: Main Report: Daily Staff Schedules Overview -->
-    <div class="main-report-card card mb-5 fade-in">
-      <div class="card-header">
-        <div class="d-flex align-items-center">
-          <i class="bi bi-calendar-fill fs-4 me-3"></i>
-          <div>
-            <h4 class="mb-1">Daily Staff Schedules Overview</h4>
-            <small class="opacity-75">Number of schedules assigned per day</small>
-          </div>
-        </div>
-      </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-custom table-striped mb-0">
-            <thead>
-              <tr>
-                <th><i class="bi bi-calendar me-2"></i>Date</th>
-                <th><i class="bi bi-clock me-2"></i>Total Schedules</th>
-              </tr>
-            </thead>
-            <tbody>
-              @forelse($scheduleStats as $s)
-                <tr>
-                  <td class="fw-medium">{{ \Carbon\Carbon::parse($s->day)->format('M d, Y') }}</td>
-                  <td>
-                    <span class="badge bg-secondary fs-6 px-3 py-2">{{ $s->total }}</span>
-                  </td>
-                </tr>
-              @empty
-                <tr>
-                  <td colspan="2" class="text-center text-muted">
-                    No schedules found in this date range.
-                  </td>
-                </tr>
-              @endforelse
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card-footer bg-light d-flex justify-content-start">
-        <div class="export-buttons">
-          {{-- 
-            If you also want to export schedules data separately,
-            you could add new routes like reports.schedules.excel or PDF. 
-            For now, we keep these buttons disabled or link them back to Visits export. 
-          --}}
-          <button class="btn btn-outline-secondary me-2" disabled>
-            <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export Schedules (Excel)
-          </button>
-          <button class="btn btn-outline-secondary" disabled>
-            <i class="bi bi-file-earmark-pdf me-2"></i>Export Schedules (PDF)
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- 3) Analytics Charts Section -->
     <div class="mb-4">

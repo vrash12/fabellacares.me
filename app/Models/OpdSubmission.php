@@ -44,4 +44,8 @@ class OpdSubmission extends Model
     $submission->load(['form','user']);
     return view('opd_submissions.show', compact('submission'));
 }
+public function department()
+{
+    return $this->belongsTo(\App\Models\Queue::class, 'department_id');
+}
 }

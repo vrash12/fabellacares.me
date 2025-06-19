@@ -56,39 +56,19 @@ class PatientRecordController extends Controller
     }
 public function index(Request $request)
 {
-    // --------- 1. filter patients ----------
-    $query = OpdSubmission::with(['patient.profile'])
-        ->whereHas('form', fn ($q) => $q->where('form_no', 'OPD-F-07'));
-
-    if ($search = $request->input('search')) {
-        $query->whereHas('patient', fn ($q) =>
-            $q->where('name', 'like', "%{$search}%")
-        );
-    }
-
-    if ($sex = $request->input('sex')) {
-        $query->whereHas('patient.profile', fn ($q) =>
-            $q->where('sex', $sex)
-        );
-    }
-
-    $patientIds = $query->get()
-                        ->pluck('patient.id')
-                        ->unique()
-                        ->values()
-                        ->all();
-
+    // 1) load every patient (plus profile & visit‐count)
     $patients = Patient::with('profile')
-                ->withCount('visits')
-                ->whereIn('id', $patientIds)
-                ->get();
+                       ->withCount('visits')
+                       ->get();
 
- $queues = Queue::with('parent')          // eager-load parent window name
+    // 2) load all non‐parent queues (for the “Queue” button modal)
+    $queues = Queue::with('parent')
                    ->whereNotNull('parent_id')
                    ->orderBy('parent_id')
                    ->orderBy('name')
                    ->get();
 
+    // 3) render the index view
     return view('patients.index', compact('patients', 'queues'));
 }
 
@@ -273,24 +253,25 @@ public function visits(Patient $patient)
     /**
      * Export a single patient record (and visits) to Excel.
      */
-    public function exportExcel(Patient $patient)
-    {
-        $patient->load(['user','visits']);
-        return Excel::download(
-            new PatientRecordExport($patient),
-            "patient-{$patient->id}-record.xlsx"
-        );
-    }
+  public function exportExcel(Request $request)
+{
+    return Excel::download(new PatientsExport, 'opd-patients.xlsx');
+}
 
-    /**
-     * Export a single patient record (and visits) to PDF.
-     */
-    public function exportPdf(Patient $patient)
-    {
-        $patient->load(['user','visits']);
-        $pdf = PDF::loadView('patients.pdf', compact('patient'))
-                  ->setPaper('a4','portrait');
+ public function exportPdf(Request $request)
+{
+    // re-use the same collection logic
+    $subQuery = OpdSubmission::whereHas('form', fn($q) => $q->where('form_no','OPD-F-07'))
+                  ->get()->pluck('patient_id')->unique();
 
-        return $pdf->download("patient-{$patient->id}-record.pdf");
-    }
+    $patients = Patient::with('profile')
+        ->withCount('visits')
+        ->whereIn('id', $subQuery)
+        ->get();
+
+    $pdf = PDF::loadView('patients.pdf', compact('patients'))
+              ->setPaper('a4','landscape');
+
+    return $pdf->download('opd-patients.pdf');
+}
 }

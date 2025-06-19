@@ -7,17 +7,17 @@
 
 @extends($layout)
 
-
 @section('content')
+<div class="container-fluid px-4">
 <div class="container-fluid px-4">
   {{-- Page Header --}}
   <div class="page-header bg-gradient-primary rounded-3 p-4 mb-4 text-white shadow-sm">
     <div class="row align-items-center">
       <div class="col">
         <h1 class="h2 mb-1 fw-bold">
-          <i class="fas fa-user-md me-2"></i> OB OPD Patients
+          <i class="fas fa-user-md me-2"></i> OPD Patients
         </h1>
-        <p class="mb-0 opacity-90">Manage obstetrics and gynecology outpatient records</p>
+        <p class="mb-0 opacity-90">Manage OPD Patients </p>
       </div>
     </div>
   </div>
@@ -65,24 +65,40 @@
           </div>
         </div>
       </form>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+
+  <div>
+    <a href="{{ route('patients.exportExcel') }}" class="btn btn-outline-success me-2">
+      <i class="fas fa-file-excel"></i> Export Excel
+    </a>
+    <a href="{{ route('patients.exportPdf') }}" class="btn btn-outline-danger me-2">
+      <i class="fas fa-file-pdf"></i> Export PDF
+    </a>
+
+  </div>
+</div>
+
     </div>
   </div>
 
   {{-- Results Table --}}
   <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white border-bottom py-3">
-      <div class="row align-items-center">
-        <div class="col">
-          <h5 class="card-title mb-0">
-            <i class="fas fa-list me-2 text-success"></i>
-            Patient Records
-            <span class="badge bg-primary ms-2">{{ count($patients) }}</span>
-          </h5>
-        </div>
-      </div>
-    </div>
+    {{-- … card header … --}}
     <div class="card-body p-0">
       @if($patients->isNotEmpty())
+        @php
+          $perPage = 10;
+          $page    = (int) request('page', 1);
+          $total   = $patients->count();
+          $pages   = (int) ceil($total / $perPage);
+          $start   = ($page - 1) * $perPage;
+          $chunk   = $patients->slice($start, $perPage);
+        @endphp
+
+        <div class="px-4 py-2 small text-muted">
+          Showing {{ $start + 1 }}–{{ min($start + $perPage, $total) }} of {{ $total }} patients
+        </div>
+
         <div class="table-responsive">
           <table class="table table-hover mb-0" id="patients-table">
             <thead class="table-light">
@@ -98,7 +114,7 @@
               </tr>
             </thead>
             <tbody>
-              @foreach($patients as $patient)
+              @foreach($chunk as $patient)
                 <tr class="border-bottom">
                   {{-- Info --}}
                   <td class="py-3 ps-4">
@@ -147,14 +163,12 @@
                         <i class="fas fa-list-check"></i>
                         <span class="d-none d-md-inline ms-1">Queue</span>
                       </button>
-                     <a href="{{ route('patients.show', $patient) }}"
+                      <a href="{{ route('patients.show', $patient) }}"
                          class="btn btn-sm btn-outline-info"
                          data-bs-toggle="tooltip" title="View Details">
                         <i class="fas fa-eye"></i>
                         <span class="d-none d-md-inline ms-1">View</span>
                       </a>
-
-
                       <a href="{{ route('patients.edit', $patient) }}"
                          class="btn btn-sm btn-outline-warning"
                          data-bs-toggle="tooltip" title="Edit Patient">
@@ -169,9 +183,6 @@
                         <span class="d-none d-md-inline ms-1">Delete</span>
                       </button>
                     </div>
-                      
-                    </div>
-                    {{-- Hidden delete form --}}
                     <form id="delete-form-{{ $patient->id }}"
                           action="{{ route('patients.destroy',$patient) }}"
                           method="POST" class="d-none">
@@ -183,6 +194,23 @@
             </tbody>
           </table>
         </div>
+
+        <nav class="px-4 py-3">
+          <ul class="pagination justify-content-end mb-0">
+            <li class="page-item @if($page<=1) disabled @endif">
+              <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $page-1]) }}">‹ Previous</a>
+            </li>
+            @for($i = 1; $i <= $pages; $i++)
+              <li class="page-item @if($i==$page) active @endif">
+                <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $i]) }}">{{ $i }}</a>
+              </li>
+            @endfor
+            <li class="page-item @if($page>=$pages) disabled @endif">
+              <a class="page-link" href="{{ request()->fullUrlWithQuery(['page' => $page+1]) }}">Next ›</a>
+            </li>
+          </ul>
+        </nav>
+
       @else
         {{-- Empty state --}}
         <div class="text-center py-5">

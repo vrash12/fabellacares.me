@@ -303,6 +303,27 @@
             <input type="hidden" name="patient_id" id="patient_id" value="{{ $prefillPatientId }}">
         </div>
 
+       <div class="form-group-enhanced">
+  <label class="form-label-enhanced">
+    <i class="fas fa-building"></i>
+    Department
+  </label>
+  <select name="department_id" class="form-control-enhanced">
+    <option value="">— Select department —</option>
+    @foreach($queues as $q)
+      <option value="{{ $q->id }}"
+         {{ (old('department_id',$selectedDeptId)==$q->id) ? 'selected':'' }}>
+        {{ $q->name }}
+      </option>
+    @endforeach
+  </select>
+  @error('department_id')
+    <div class="error-message"><i class="fas fa-exclamation-triangle"></i>{{ $message }}</div>
+  @enderror
+</div>
+
+        
+
         {{-- 2) The <datalist> with each patient’s “name (id)” --}}
         <datalist id="patient_list">
             @foreach($patients as $p)
@@ -421,31 +442,7 @@
                                         value="{{ $row['bp'] ?? '' }}"
                                     >
                                 </td>
-                                <td>
-                                    <select
-                                        name="followups[{{ $i }}][department_id]"
-                                        class="form-control-enhanced table-input"
-                                    >
-                                        @foreach($queues as $q)
-                                            <option
-                                                value="{{ $q->id }}"
-                                                @if(
-                                                    isset($row['department_id']) 
-                                                    && $row['department_id'] == $q->id
-                                                )
-                                                    selected
-                                                @elseif(
-                                                    !isset($row['department_id']) 
-                                                    && $selectedDeptId == $q->id
-                                                )
-                                                    selected
-                                                @endif
-                                            >
-                                                {{ $q->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </td>
+                            
                                 <td>
                                     <input
                                         type="text"

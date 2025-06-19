@@ -15,6 +15,24 @@
     <div class="text-center mb-4">
         <h2>🏥 INTERNAL MEDICINE TRIAGE FORM</h2>
     </div>
+{{-- ─── Patient selector (top of the form, just below the title) ─── --}}
+<div class="mb-4">
+  <label class="form-label">Patient <span class="text-danger">*</span></label>
+  <select name="patient_id"
+          id="patient-select"
+          class="form-select @error('patient_id') is-invalid @enderror"
+          data-placeholder="Search patient…">
+    @if(isset($triageForm['patient_id']))
+      @php
+        $p = \App\Models\Patient::find($triageForm['patient_id']);
+      @endphp
+      @if($p)
+        <option value="{{ $p->id }}" selected>{{ $p->name }}</option>
+      @endif
+    @endif
+  </select>
+  @error('patient_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+</div>
 
     {{-- I. Chief Complaint --}}
     <h5>I. Chief Complaint</h5>
@@ -192,3 +210,18 @@
       {{ isset($triageForm) ? 'Update Triage' : 'Save Triage' }}
     </button>
 </form>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+   $('#patient-select').select2({
+      theme: 'bootstrap-5',
+      minimumInputLength: 2,
+      ajax: {
+         url: '{{ route('patients.search') }}',
+         data: params => ({ q: params.term }),
+         processResults: data => ({ results: data.results })
+      }
+   });
+});
+</script>
+@endpush

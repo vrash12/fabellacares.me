@@ -10,85 +10,131 @@ use PDF;
 use App\Exports\ServedTokensExport;
 use App\Models\Token;
 use App\Models\Queue;
+use Carbon\Carbon;
 
 class ReportController extends Controller
 {
-  public function index(Request $request)
+    public function index(Request $request)
     {
-        // 1) Date range (defaults to past month)
-        $dateFrom = $request->input('from', now()->subMonth()->toDateString());
-        $dateTo   = $request->input('to',   now()->toDateString());
+        //
+        // ─── 1) GRAB & NORMALISE "from"/"to" ─────────────────────────────────────
+        //
+        $fromInput = $request->input('from');
+        $toInput   = $request->input('to');
 
-        // 2) Daily visits → served tokens
+        $fromCarbon = $fromInput
+            ? Carbon::parse($fromInput)->startOfDay()
+            : Carbon::now()->subMonth()->startOfDay();
+
+        $toCarbon = $toInput
+            ? Carbon::parse($toInput)->endOfDay()
+            : Carbon::now()->endOfDay();
+
+  $dateFromIso = $fromCarbon->toDateString();   // 2025-06-08
+$dateToIso   = $toCarbon  ->toDateString();   // 2025-07-09
+
+$dateFrom = $fromCarbon->format('m/d/Y');     // 06/08/2025 (if you still
+$dateTo   = $toCarbon  ->format('m/d/Y');     // 07/09/2025   need these)
+
+        //
+        // ─── 2) DAILY VISITS → SERVED TOKENS ───────────────────────────────────────
+        //
         $visits = DB::table('tokens')
             ->whereNotNull('served_at')
-            ->whereBetween('served_at', [$dateFrom, $dateTo])
+            ->whereBetween('served_at', [$fromCarbon, $toCarbon])
             ->selectRaw('DATE(served_at) AS day, COUNT(*) AS total')
             ->groupBy('day')
             ->orderBy('day')
             ->get();
 
-        // 3) Daily schedules
+        //
+        // ─── 3) DAILY SCHEDULES ────────────────────────────────────────────────────
+        //
         $scheduleStats = DB::table('schedules')
-            ->whereBetween('date', [$dateFrom, $dateTo])
+            ->whereDate('date', '>=', $fromCarbon->toDateString())
+            ->whereDate('date', '<=', $toCarbon->toDateString())
             ->selectRaw('DATE(date) AS day, COUNT(*) AS total')
             ->groupBy('day')
             ->orderBy('day')
             ->get();
 
-        // 4) Demographics
-        $ageStats = DB::table('patients')
-            ->selectRaw("
-                CASE
-                  WHEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) < 18 THEN '<18'
-                  WHEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) BETWEEN 18 AND 35 THEN '18–35'
-                  WHEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) BETWEEN 36 AND 60 THEN '36–60'
-                  ELSE '>60'
-                END AS age_range,
-                COUNT(*) AS total
-            ")
-            ->groupBy('age_range')
-            ->orderByRaw("FIELD(age_range,'<18','18–35','36–60','>60')")
-            ->get();
+            $deptStats = Queue::whereNotNull('parent_id')   // real “departments”, not the Window A/B parents
+    ->withCount([
+        'tokens as served_count' => function ($q) use ($fromCarbon, $toCarbon) {
+            $q->whereNotNull('served_at')
+               ->whereBetween('served_at', [$fromCarbon, $toCarbon]);
+        }
+    ])
+    ->orderBy('name')
+    ->get();
 
-        $genderStats = DB::table('patient_profiles')
-            ->select('sex', DB::raw('COUNT(*) AS total'))
-            ->groupBy('sex')
-            ->get();
+        //
+        // ─── 4) DEMOGRAPHICS ──────────────────────────────────────────────────────
+        //
+   $ageStats = DB::table('triage_forms AS tf')
+    ->join('patients AS p', 'p.id', '=', 'tf.patient_id')
+    ->selectRaw("
+        CASE
+          WHEN TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) < 18              THEN '<18'
+          WHEN TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) BETWEEN 18 AND 35 THEN '18–35'
+          WHEN TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) BETWEEN 36 AND 60 THEN '36–60'
+          ELSE '>60'
+        END AS age_range,
+        COUNT(*) AS total
+    ")
+    ->groupBy('age_range')
+    ->orderByRaw("FIELD(age_range,'<18','18–35','36–60','>60')")
+    ->get();
 
-        $bloodStats = DB::table('patient_profiles')
-            ->select('blood_type', DB::raw('COUNT(*) AS total'))
-            ->groupBy('blood_type')
-            ->get();
 
-        $deliveryStats = DB::table('patient_profiles')
-            ->select('delivery_type', DB::raw('COUNT(*) AS total'))
-            ->groupBy('delivery_type')
-            ->get();
+    $genderStats = DB::table('patient_profiles')
+    ->whereNotNull('sex')
+    ->select('sex', DB::raw('COUNT(*) AS total'))
+    ->groupBy('sex')
+    ->get();
 
-        // 5) Token summary + per-window pending counts
+      $bloodStats = DB::table('triage_forms')
+    ->whereNotNull('blood_type')
+    ->select('blood_type', DB::raw('COUNT(*) AS total'))
+    ->groupBy('blood_type')
+    ->get();
+
+      $deliveryStats = DB::table('triage_forms')
+    ->whereNotNull('delivery_type')
+    ->select('delivery_type', DB::raw('COUNT(*) AS total'))
+    ->groupBy('delivery_type')
+    ->get();
+
+        //
+        // ─── 5) TOKEN SUMMARY + PENDING COUNTS ─────────────────────────────────────
+        //
         $summary = [
             'total'    => Token::count(),
             'pending'  => Token::whereNull('served_at')->count(),
             'complete' => Token::whereNotNull('served_at')->count(),
         ];
 
+        // Get pending tokens by queue (window)
         $summary['windows'] = Queue::whereNull('parent_id')
-            ->pluck('id')  // e.g. [1,2,…]
+            ->pluck('id')
             ->mapWithKeys(fn($id) => [
                 $id => Token::where('queue_id', $id)
                             ->whereNull('served_at')
                             ->count(),
             ]);
 
-        // 6) Queues listing (same as QueueController@index)
+        //
+        // ─── 6) QUEUES LISTING ─────────────────────────────────────────────────────
+        //
         $queues = Queue::withCount(['tokens as pending_count' => fn($q) =>
                         $q->whereNull('served_at')])
             ->whereNull('parent_id')
             ->orderBy('name')
             ->get();
 
-        // 7) Render the combined view
+        //
+        // ─── 7) RENDER VIEW ────────────────────────────────────────────────────────
+        //
         return view('reports.index', compact(
             'dateFrom',
             'dateTo',
@@ -99,13 +145,43 @@ class ReportController extends Controller
             'bloodStats',
             'deliveryStats',
             'summary',
-            'queues'
+            'queues',
+            'deptStats',
+            'dateFromIso',
+                'dateToIso',
         ));
     }
 
-    /**
-     * Stub – keep as-is
-     */
+    public function servedTokenHistory(Request $request)
+    {
+        // 1) parse & normalize
+        $fromInput = $request->input('from');
+        $toInput   = $request->input('to');
+
+        $from = $fromInput
+             ? Carbon::parse($fromInput)->startOfDay()
+             : Carbon::now()->subMonth()->startOfDay();
+
+        $to   = $toInput
+             ? Carbon::parse($toInput)->endOfDay()
+             : Carbon::now()->endOfDay();
+
+        // 2) fetch every served token in that window
+        $history = Token::with('queue')
+            ->whereNotNull('served_at')
+            ->whereBetween('served_at', [$from, $to])
+            ->orderBy('served_at','desc')
+            ->get();
+
+        // 3) format for the pickers
+        $dateFrom = $from->format('m/d/Y');
+        $dateTo   = $to->format('m/d/Y');
+
+        return view('reports.servedtokens', compact(
+            'history','dateFrom','dateTo'
+        ));
+    }
+
     public function generate(Request $request)
     {
         return back()->with('success', 'Report generation triggered!');
@@ -113,51 +189,108 @@ class ReportController extends Controller
 
     /**
      * Quick data-integrity check
-     * (still uses patient_visits if you want to keep this)
      */
     public function verify(Request $request)
     {
-        $missing = DB::table('patient_visits')
-            ->whereNull('notes')
-            ->count();
-
+        // Check if there are any tokens without served_at timestamps
+        $pendingTokens = Token::whereNull('served_at')->count();
+        $totalTokens = Token::count();
+        
         return response()->json([
-            'ok'      => $missing === 0,
-            'missing' => $missing,
+            'ok'      => $pendingTokens === 0,
+            'missing' => $pendingTokens,
+            'total'   => $totalTokens,
+            'message' => $pendingTokens === 0 
+                ? 'All tokens have been served!' 
+                : "{$pendingTokens} tokens are still pending service."
         ]);
     }
 
- public function exportExcel(Request $request)
-{
-    $from = $request->input('from');
-    $to   = $request->input('to');
+    public function exportExcel(Request $request)
+    {
+        $from = $request->input('from');
+        $to   = $request->input('to');
 
-    return Excel::download(
-        new ServedTokensExport($from, $to),
-        "served_tokens_{$from}_to_{$to}.xlsx"
-    );
-}
+        // Parse dates properly
+        $fromCarbon = Carbon::parse($from)->startOfDay();
+        $toCarbon = Carbon::parse($to)->endOfDay();
 
-public function exportPdf(Request $request)
-{
-    $from = $request->input('from');
-    $to   = $request->input('to');
+        return Excel::download(
+            new ServedTokensExport($fromCarbon->toDateTimeString(), $toCarbon->toDateTimeString()),
+            "served_tokens_{$from}_to_{$to}.xlsx"
+        );
+    }
 
-    $tokens = DB::table('tokens')
-        ->join('queues', 'tokens.queue_id', '=', 'queues.id')
-        ->whereNotNull('tokens.served_at')
-        ->whereBetween('tokens.served_at', [$from, $to])
-        ->orderBy('queues.name')
-        ->orderBy('tokens.served_at')
-        ->get([
-            'queues.name as department',
-            'tokens.code',
-            DB::raw('DATE_FORMAT(tokens.served_at,"%Y-%m-%d %H:%i") as served_at'),
-        ]);
+    public function exportPdf(Request $request)
+    {
+        $from = $request->input('from');
+        $to   = $request->input('to');
 
-    $pdf = PDF::loadView('reports.tokens_pdf', compact('tokens', 'from', 'to'))
-              ->setPaper('a4', 'portrait');
+        // Parse dates properly
+        $fromCarbon = Carbon::parse($from)->startOfDay();
+        $toCarbon = Carbon::parse($to)->endOfDay();
 
-    return $pdf->download("served_tokens_{$from}_to_{$to}.pdf");
-}
+        $tokens = DB::table('tokens')
+            ->join('queues', 'tokens.queue_id', '=', 'queues.id')
+            ->whereNotNull('tokens.served_at')
+            ->whereBetween('tokens.served_at', [$fromCarbon, $toCarbon])
+            ->orderBy('queues.name')
+            ->orderBy('tokens.served_at')
+            ->get([
+                'queues.name as department',
+                'tokens.code',
+                DB::raw('DATE_FORMAT(tokens.served_at,"%Y-%m-%d %H:%i") as served_at'),
+            ]);
+
+        $pdf = PDF::loadView('reports.tokens_pdf', compact('tokens', 'from', 'to'))
+                  ->setPaper('a4', 'portrait');
+
+        return $pdf->download("served_tokens_{$from}_to_{$to}.pdf");
+    }
+      /**
+     * Export Schedules within date range to Excel.
+     */
+    public function exportSchedulesExcel(Request $request)
+    {
+        $from = $request->input('from') ?: Carbon::now()->subMonth()->format('Y-m-d');
+        $to   = $request->input('to')   ?: Carbon::now()->format('Y-m-d');
+
+        $fromCarbon = Carbon::parse($from)->startOfDay();
+        $toCarbon   = Carbon::parse($to)->endOfDay();
+
+        return Excel::download(
+            new SchedulesExport($fromCarbon->toDateTimeString(), $toCarbon->toDateTimeString()),
+            "work_schedules_{$from}_to_{$to}.xlsx"
+        );
+    }
+
+    /**
+     * Export Schedules within date range to PDF.
+     */
+    public function exportSchedulesPdf(Request $request)
+    {
+        $from = $request->input('from') ?: Carbon::now()->subMonth()->format('Y-m-d');
+        $to   = $request->input('to')   ?: Carbon::now()->format('Y-m-d');
+
+        $fromCarbon = Carbon::parse($from)->startOfDay();
+        $toCarbon   = Carbon::parse($to)->endOfDay();
+
+        $schedules = DB::table('schedules')
+            ->whereBetween('date', [$fromCarbon, $toCarbon])
+            ->select([
+                'department',
+                'staff_name',
+                'role',
+                DB::raw("DATE_FORMAT(date, '%Y-%m-%d') as date"),
+                'start_day',
+                'shift_length'
+            ])
+            ->orderBy('date')
+            ->get();
+
+        $pdf = PDF::loadView('reports.schedules_pdf', compact('schedules','from','to'))
+                  ->setPaper('a4', 'portrait');
+
+        return $pdf->download("work_schedules_{$from}_to_{$to}.pdf");
+    }
 }

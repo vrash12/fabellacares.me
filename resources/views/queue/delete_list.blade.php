@@ -1,27 +1,21 @@
-{{-- resources/views/queue/delete_list.blade.php --}}
 @extends('layouts.admin')
 
 @section('content')
   <div class="container py-4">
-    {{-- 1) Back Link + Title --}}
+    {{-- Back + Title --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
       <a href="{{ route('queue.delete.select') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-2"></i>Back to Queue Selection
       </a>
       <h2>Delete Tokens from “{{ $queue->name }}”</h2>
-      {{-- empty placeholder so title is centered --}}
       <div style="width: 180px;"></div>
     </div>
 
-   
-
-    {{-- 3) If no pending tokens, show a notice --}}
     @if($tokens->isEmpty())
       <div class="alert alert-info">
         There are no pending tokens in this queue.
       </div>
     @else
-      {{-- 4) Table of pending tokens --}}
       <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">
           <thead class="table-dark">
@@ -35,7 +29,8 @@
           <tbody>
             @foreach($tokens as $idx => $token)
               <tr>
-                <td>{{ $idx + 1 }}</td>
+                {{-- calculate absolute index --}}
+                <td>{{ ($tokens->currentPage() - 1) * $tokens->perPage() + $idx + 1 }}</td>
                 <td>{{ $token->code }}</td>
                 <td>{{ $token->created_at->format('M d, Y H:i:s') }}</td>
                 <td>
@@ -55,6 +50,11 @@
             @endforeach
           </tbody>
         </table>
+      </div>
+
+      {{-- Pagination links --}}
+      <div class="mt-3">
+        {{ $tokens->withQueryString()->links('pagination::bootstrap-5') }}
       </div>
     @endif
   </div>

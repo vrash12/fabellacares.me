@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Token extends Model
 {
@@ -16,6 +17,7 @@ class Token extends Model
         'code',
         'served_at',
     ];
+    protected $dates = ['deleted_at'];
 
     protected $casts = [
         'served_at' => 'datetime',

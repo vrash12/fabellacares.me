@@ -73,7 +73,8 @@
   @endif
 
   {{-- Patient‐facing submission form --}}
-  <form action="{{ route('patient.opd_forms.submit', $opd_form) }}" method="POST">
+<form action="{{ route('opd_forms.submit', $opd_form) }}" method="POST">
+
     @csrf
     <input type="hidden" name="form_id" value="{{ $opd_form->id }}">
 

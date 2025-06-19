@@ -1,4 +1,4 @@
-{{--resources/views/queue/print.blade.php--}}
+{{-- resources/views/queue/print.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,12 +22,7 @@ body           { display:flex; flex-direction:column; align-items:center;
 .time          { font-size:10pt; color:#555; }
 hr             { width:100%; border:none; border-top:1px dashed #000;
                  margin:6mm 0; }
-                 
-    .patient {
-      font-size: 14pt;
-      font-weight: 600;
-      margin: 3mm 0;
-    }
+.patient       { font-size:14pt; font-weight:600; margin:3mm 0; }
 </style>
 </head>
 <body onload="window.print(); setTimeout(()=>window.close(),400);">
@@ -42,7 +37,25 @@ hr             { width:100%; border:none; border-top:1px dashed #000;
   @endif
 
   <hr>
-  <div class="time">{{ $timestamp }}</div>
+   <div class="time" id="printTime"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const opts = {
+        year:   'numeric',
+        month:  'long',
+        day:    'numeric',
+        hour:   'numeric',
+        minute: 'numeric',
+        hour12: true
+      };
+      document.getElementById('printTime')
+              .innerText = new Date().toLocaleString(undefined, opts);
+      // trigger print after the timestamp is set
+      window.print();
+      setTimeout(()=>window.close(), 400);
+    });
+  </script>
 
 </body>
 </html>
