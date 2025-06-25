@@ -471,16 +471,15 @@
     <form class="row gy-3 gx-3 align-items-end">
       <div class="col-md-4">
         <label class="form-label">Queue</label>
-        <select class="form-select" name="queue_id">
-          <option value="">All Queues</option>
-          @foreach($queues as $q)
-            <option
-              value="{{ $q->id }}"
-              {{ request('queue_id') == $q->id ? 'selected' : '' }}>
-              {{ $q->name }}
-            </option>
-          @endforeach
-        </select>
+       <select class="form-select" name="queue_id">
+  <option value="">All Queues</option>
+  @foreach($queues as $q)
+    <option value="{{ $q->id }}" 
+            {{ request('queue_id') == $q->id ? 'selected' : '' }}>
+      {{ $q->name }}
+    </option>
+  @endforeach
+</select>
       </div>
       <div class="col-md-4">
         <label class="form-label">Status</label>

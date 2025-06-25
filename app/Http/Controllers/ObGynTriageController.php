@@ -26,16 +26,14 @@ class ObGynTriageController extends Controller
         return view('opd_forms.obgyn_triage.index', compact('submissions'));
     }
 
-    /**
-     * Show the form for creating a new OB-GYN triage submission.
-     */
-    public function create()
-    {
-        return view('opd_forms.obgyn_triage.create', [
-            'triageForm' => null,
-            'postRoute'  => route('triage.obgyn.store'),
-        ]);
-    }
+  public function create()
+{
+    return view('opd_forms.obgyn_triage.create', [
+        'triageForm' => null,
+        'patient'    => null,
+        'postRoute'  => route('triage.obgyn.store'),
+    ]);
+}
 
     /**
      * Store a newly created OB-GYN triage submission.
@@ -45,6 +43,7 @@ class ObGynTriageController extends Controller
         $template = OpdForm::where('form_no', 'TRG-OBG-01')->firstOrFail();
 
         $rules = [
+              'patient_id'                   => 'required|exists:patients,id',
             'chief_complaint'               => 'nullable|string|max:255',
             'onset'                         => 'nullable|string|max:255',
             'duration'                      => 'nullable|string|max:255',
@@ -89,6 +88,7 @@ class ObGynTriageController extends Controller
         OpdSubmission::create([
             'form_id' => $template->id,
             'user_id' => auth()->id(),
+            'patient_id' => $data['patient_id'],
             'answers' => $data,
         ]);
 
@@ -110,15 +110,16 @@ class ObGynTriageController extends Controller
     /**
      * Show the form for editing the specified OB-GYN triage submission.
      */
-    public function edit(OpdSubmission $submission)
-    {
-        $submission->load('form');
+ public function edit(OpdSubmission $submission)
+{
+    $submission->load('form','patient');
 
-        return view('opd_forms.obgyn_triage.edit', [
-            'triageForm' => $submission->answers,
-            'postRoute'  => route('triage.obgyn.update', $submission),
-        ]);
-    }
+    return view('opd_forms.obgyn_triage.edit', [
+        'triageForm' => $submission->answers,
+        'patient'    => $submission->patient,
+        'postRoute'  => route('triage.obgyn.update', $submission),
+    ]);
+}
 
     /**
      * Update the specified OB-GYN triage submission.
@@ -129,6 +130,7 @@ class ObGynTriageController extends Controller
         $rules = (new self)->store(request())->rules ?? [];
 
         $data = $request->validate([
+            'patient_id'                   => 'required|exists:patients,id',
             'chief_complaint'               => 'nullable|string|max:255',
             'onset'                         => 'nullable|string|max:255',
             'duration'                      => 'nullable|string|max:255',
@@ -169,6 +171,7 @@ class ObGynTriageController extends Controller
         ]);
 
         $submission->update([
+            'patient_id' => $data['patient_id'],
             'answers' => $data,
         ]);
 

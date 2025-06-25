@@ -4,8 +4,8 @@
             ? 'layouts.encoder'
             : 'layouts.admin';
 @endphp
-
 @extends($layout)
+
 
 @section('content')
 <div class="page-header mb-4 d-flex justify-content-between align-items-center">

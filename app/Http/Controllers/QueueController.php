@@ -108,6 +108,76 @@ class QueueController extends Controller
 
     return response()->json($stats);
 } 
+
+
+   //
+    // ─── ENCODER DASHBOARD ────────────────────────────────────────────────────────
+    //
+public function encoderIndex(Request $request)
+{
+    // 1. Base query: only unserved tokens, eager‐load queue
+    $query = Token::with('queue')
+                  ->whereNull('served_at');
+
+    // 2. Optional filters
+    if ($request->filled('queue_id')) {
+        $query->where('queue_id', $request->queue_id);
+    }
+    if ($request->filled('date_from')) {
+        $query->whereDate('created_at', '>=', $request->date_from);
+    }
+    if ($request->filled('date_to')) {
+        $query->whereDate('created_at', '<=', $request->date_to);
+    }
+
+    // 3. Paginate
+    $pending = $query->orderBy('created_at', 'desc')->paginate(20);
+
+    // 4. Sidebar data: all queues + pending count
+    $queues = Queue::select('id','name')
+        ->withCount(['tokens as pending_count' => function($q){
+            $q->whereNull('served_at');
+        }])
+        ->get();
+
+    // 5. KPI totals
+    $totalQueues     = $queues->count();
+    $totalPending    = $pending->total(); // from paginate
+    $totalUnfiltered = Token::whereNull('served_at')->count();
+
+    // 6. Top 10 queues by pending_count
+    $deptPending = $queues
+        ->sortByDesc('pending_count')
+        ->take(10)
+        ->map(fn($q) => [
+            'name'  => $q->name,
+            'count' => $q->pending_count,
+        ])->values();
+
+    // 7. New tokens per day (last 7 days)
+    $raw = DB::table('tokens')
+        ->select(DB::raw("DATE(created_at) as date"), DB::raw("count(*) as cnt"))
+        ->whereDate('created_at', '>=', Carbon::today()->subDays(6))
+        ->groupBy('date')
+        ->orderBy('date')
+        ->get();
+    // fill in missing dates
+    $dailyTokens = collect();
+    for ($i = 6; $i >= 0; $i--) {
+        $d = Carbon::today()->subDays($i)->toDateString();
+        $found = $raw->first(fn($r)=> $r->date === $d);
+        $dailyTokens->push([
+            'date'  => $d,
+            'count' => $found->cnt ?? 0,
+        ]);
+    }
+
+    return view('encoder.index', compact(
+        'pending','queues',
+        'totalQueues','totalPending','totalUnfiltered',
+        'deptPending','dailyTokens'
+    ));
+}
   public function resetCounter(Queue $queue)
     {
         DB::transaction(function () use ($queue) {
@@ -524,36 +594,36 @@ $tokens = $queue->tokens()
         ))->with('currentTime', now()->format('d F Y H:i:s'));
     }
 
-    public function history(Request $req)
-    {
-        $query = Token::with('queue');
+   public function history(Request $req)
+{
+    $query = Token::with('queue');
 
-        if ($req->filled('department_id')) {
-            $query->where('queue_id', $req->department_id);
-        }
-        if ($req->filled('status')) {
-            $query->when($req->status === 'pending',
-                fn($q) => $q->whereNull('served_at'),
-                fn($q) => $q->whereNotNull('served_at')
-            );
-        }
-
-        $tokens      = $query->orderBy('created_at','desc')->paginate(20);
-        $departments = Department::orderBy('name')->get();
-        $queues      = Queue::orderBy('name')->get();
-
-        return view('queue.history', compact('tokens','queues','departments'));
+    // filter by queue_id (not department_id)
+    if ($req->filled('queue_id')) {
+        $query->where('queue_id', $req->queue_id);
     }
 
-    //
-    // ─── ENCODER DASHBOARD ────────────────────────────────────────────────────────
-    //
-
-    public function encoderIndex()
-    {
-        $pending = Token::whereNull('served_at')->get();
-        return view('encoder.index', compact('pending'));
+    // filter by status
+    if ($req->filled('status')) {
+        $query->when(
+            $req->status === 'pending',
+            fn($q) => $q->whereNull('served_at'),
+            fn($q) => $q->whereNotNull('served_at')
+        );
     }
+
+    $tokens = $query
+        ->orderBy('created_at', 'desc')
+        ->paginate(20)
+        ->withQueryString();
+
+    $queues = Queue::orderBy('name')->get();
+
+    return view('queue.history', compact('tokens','queues'));
+}
+
+ 
+
 
     public function encoderStore(Request $req, Department $department)
     {

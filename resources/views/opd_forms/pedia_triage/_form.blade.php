@@ -9,8 +9,31 @@
 @endphp
 
 <form method="POST" action="{{ $postRoute ?? route('triage.pedia.store') }}">
-  @csrf
-
+ @csrf
+  @isset($pediaForm)
+    @method('PUT')
+  @endisset
+   <div class="section-card">
+    <h5 class="section-title">
+      <span class="section-number">I</span>
+      Patient
+    </h5>
+    <div class="mb-3">
+      <label class="form-label">Select Patient</label>
+      <select name="patient_id" class="form-select" required>
+        <option value="">– Choose a patient –</option>
+        @foreach($patients as $p)
+          <option value="{{ $p->id }}"
+            {{ f('patient_id', $pediaForm)==$p->id ? 'selected' : '' }}>
+            {{ $p->name }}
+          </option>
+        @endforeach
+      </select>
+      @error('patient_id')
+        <div class="text-danger small">{{ $message }}</div>
+      @enderror
+    </div>
+  </div>
   <div class="text-center mb-4">
     <h2>🧸 PEDIA FORM</h2>
   </div>

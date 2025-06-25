@@ -15,6 +15,21 @@
     <div class="text-center mb-4">
         <h2>🩺 OB-GYN TRIAGE FORM</h2>
     </div>
+{{-- 0. Patient --}}
+<div class="mb-4">
+  <h5>🩺 Patient</h5>
+  <label class="form-label">Search patient (Last, Given)</label>
+  <select id="patient_id"
+          name="patient_id"
+          class="form-select"
+          style="width: 100%">
+      @isset($patient)
+        <option value="{{ $patient->id }}" selected>
+          {{ $patient->name }}
+        </option>
+      @endisset
+  </select>
+</div>
 
     {{-- I. Chief Complaint --}}
     <h5>I. Chief Complaint</h5>
@@ -350,3 +365,24 @@
       {{ isset($triageForm) ? 'Update Form' : 'Save Form' }}
     </button>
 </form>
+@once
+  @push('scripts')
+  <script>
+    $(function(){
+      $('#patient_id').select2({
+        placeholder: 'Type at least 2 letters…',
+        minimumInputLength: 2,
+        allowClear: true,
+        ajax: {
+          url: @json(route('patients.search')),
+          data: params => ({ q: params.term }),
+          processResults: data => ({ results: data.results })
+        },
+        templateResult: item  => item.text || item.id,
+        templateSelection: item => item.text || item.id,
+        width: '100%'
+      });
+    });
+  </script>
+  @endpush
+@endonce

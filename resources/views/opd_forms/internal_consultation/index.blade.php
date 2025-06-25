@@ -4,7 +4,7 @@
 @section('content')
 <div class="page-header mb-4 d-flex justify-content-between align-items-center">
   <h1 class="h3">Internal Medicine Consultations</h1>
-  <a href="{{ route('triage.internal.create') }}" class="btn btn-primary">
+  <a href="{{ route('consult.internal.create') }}" class="btn btn-primary">
     <i class="bi bi-plus-lg"></i> New Consultation
   </a>
 </div>

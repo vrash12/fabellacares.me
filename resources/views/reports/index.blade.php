@@ -392,6 +392,55 @@
             <canvas id="deliveryChart" style="height:300px"></canvas>
           </div>
         </div>
+        <div class="chart-card card fade-in">
+  <div class="card-header">
+    <i class="bi bi-person-badge me-2"></i>Civil Status
+  </div>
+  <div class="card-body">
+    <canvas id="civilChart" style="height:300px"></canvas>
+  </div>
+</div>
+
+<!-- Religion -->
+<div class="chart-card card fade-in">
+  <div class="card-header">
+    <i class="bi bi-book me-2"></i>Religion
+  </div>
+  <div class="card-body">
+    <canvas id="religionChart" style="height:300px"></canvas>
+  </div>
+</div>
+
+<!-- Family Planning -->
+<div class="chart-card card fade-in">
+  <div class="card-header">
+    <i class="bi bi-heart me-2"></i>Family Planning Methods
+  </div>
+  <div class="card-body">
+    <canvas id="familyChart" style="height:300px"></canvas>
+  </div>
+</div>
+
+
+<!-- Blood Pressure -->
+<div class="chart-card card fade-in">
+  <div class="card-header">
+    <i class="bi bi-arrows-expand me-2"></i>Blood Pressure
+  </div>
+  <div class="card-body">
+    <canvas id="bpChart" style="height:300px"></canvas>
+  </div>
+</div>
+
+<!-- Comorbidity Flags -->
+<div class="chart-card card fade-in">
+  <div class="card-header">
+    <i class="bi bi-ui-checks me-2"></i>Comorbidity Flags
+  </div>
+  <div class="card-body">
+    <canvas id="comorbidityChart" style="height:300px"></canvas>
+  </div>
+</div>
       </div>
     </div>
   </div>
@@ -598,6 +647,68 @@
         }
       });
     })();
+
+    (() => {
+  const stats = @json($civilStats);
+  const { labels, data } = extract(stats, 'label', 'total');
+  new Chart(document.getElementById('civilChart'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: blueTheme.colors }] },
+    options: { responsive:true, maintainAspectRatio:false }
+  });
+})();
+
+// Religion (doughnut)
+(() => {
+  const stats = @json($religionStats);
+  const { labels, data } = extract(stats, 'label', 'total');
+  new Chart(document.getElementById('religionChart'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: blueTheme.colors }] },
+    options: { responsive:true, maintainAspectRatio:false }
+  });
+})();
+
+// Family Planning (doughnut)
+(() => {
+  const stats = @json($familyStats);
+  const { labels, data } = extract(stats, 'label', 'total');
+  new Chart(document.getElementById('familyChart'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: blueTheme.colors }] },
+    options: { responsive:true, maintainAspectRatio:false }
+  });
+})();
+
+// Blood Pressure (bar)
+(() => {
+  const stats = @json($bpStats);
+  const { labels, data } = extract(stats, 'label', 'total');
+  new Chart(document.getElementById('bpChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Count', data, backgroundColor: blueTheme.colors }] },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      scales: { y:{ beginAtZero:true } }
+    }
+  });
+})();
+
+// Comorbidity Flags (bar)
+(() => {
+  const stats = @json($comorbidityStats);
+  const { labels, data } = extract(stats, 'label', 'total');
+  new Chart(document.getElementById('comorbidityChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Count', data, backgroundColor: blueTheme.colors }] },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      scales: { y:{ beginAtZero:true } }
+    }
+  });
+})();
 
     // 8) Optional: Animate schedule‐chart or fade‐in on scroll
     const observerOptions = {

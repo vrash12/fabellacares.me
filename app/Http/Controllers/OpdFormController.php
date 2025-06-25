@@ -122,11 +122,11 @@ public function index()
 
     // ── Fill & Submit ───────────────────────────────────────────────────────
 
-    /** GET: blank form for patient/encoder to fill */
-    public function fill(OpdForm $form)
-    {
-        return view('opd_forms.fill', compact('form'));
-    }
+    public function fill(OpdForm $opd_form)
+{
+    // load the template and show a “fill” view
+    return view('opd_forms.fill', ['form' => $opd_form]);
+}
 
     /** POST: store one submission */
     public function submit(Request $request, OpdForm $form)

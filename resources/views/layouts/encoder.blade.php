@@ -192,37 +192,52 @@
                         </a>
                     </li>
 
-                    <!-- OPD Forms Section Header -->
-                    <li class="nav-item mt-3">
-                        <div class="nav-section-title">OPD Forms</div>
-                    </li>
+               {{-- Toggle --}}
+<li class="nav-item">
+    <button class="nav-link d-flex justify-content-between align-items-center"
+            data-bs-toggle="collapse"
+            data-bs-target="#opdTemplateMenu"
+            aria-expanded="false">
+        <span><i class="bi bi-folder2-open"></i> All Templates</span>
+        <i class="bi bi-chevron-down small"></i>
+    </button>
 
-                    <!-- High-Risk OPD -->
-                    <li class="nav-item">
-                        <a href="{{ route('encoder.opd.high-risk.index') }}"
-                           class="nav-link {{ request()->is('encoder/opd/high-risk*') ? 'active' : '' }}">
-                            <i class="bi bi-file-medical-fill"></i>
-                            <span>High-Risk OPD</span>
-                        </a>
-                    </li>
+    {{-- Template list --}}
+    <ul class="collapse list-unstyled ps-4" id="opdTemplateMenu">
+        @foreach($sidebarForms as $tpl)
+           @php
+  $slug = Str::slug($tpl->name);
+  // Internal Medicine Triage template has form_no = TRG-IM-01
+  if ($tpl->form_no === 'TRG-IM-01') {
+      $route = ['triage.internal.index'];
+  }
+  elseif (Str::contains($slug,'high-risk')) {
+      $route = ['encoder.opd.high-risk.index'];
+  }
+  elseif (Str::contains($slug,'follow-up')) {
+      $route = ['encoder.opd.follow-up.index'];
+  }
+  elseif (Str::contains($slug,'ob')) {
+      $route = ['encoder.opd.ob.index'];
+  }
+  else {
+      // your generic fill or other mapping…
+      $route = ['opd_forms.fill', $tpl->id];
+  }
+@endphp
 
-                    <!-- Follow-Up OPD -->
-                    <li class="nav-item">
-                        <a href="{{ route('encoder.opd.follow-up.index') }}"
-                           class="nav-link {{ request()->is('encoder/opd/follow-up*') ? 'active' : '' }}">
-                            <i class="bi bi-file-earmark-medical-fill"></i>
-                            <span>Follow-Up OPD</span>
-                        </a>
-                    </li>
 
-                    <!-- OB OPD -->
-                    <li class="nav-item">
-                        <a href="{{ route('encoder.opd.ob.index') }}"
-                           class="nav-link {{ request()->is('encoder/opd/ob*') ? 'active' : '' }}">
-                            <i class="bi bi-file-medical"></i>
-                            <span>OB OPD</span>
-                        </a>
-                    </li>
+            <li>
+                <a href="{{ route(...$route) }}"
+                   class="nav-link {{ request()->fullUrlIs(route(...$route).'*') ? 'active' : '' }}">
+                    <i class="bi bi-circle"></i>
+                    {{ $tpl->name }}
+                </a>
+            </li>
+        @endforeach
+    </ul>
+</li>
+
                 </ul>
             </div>
         </div>

@@ -85,7 +85,10 @@ Route::post('queue/{queue}/issue', [QueueController::class, 'issue'])
 /* --------------------------------------------------------------------------
  | 5.  Internal Medicine Consultation (auth)
  -------------------------------------------------------------------------- */
-Route::middleware('auth')->prefix('consult/internal')->name('consult.internal.')->group(function () {
+Route::middleware(['auth'])
+      ->prefix('consult/internal')
+      ->name('consult.internal.')
+      ->group(function () {
     Route::get('/',                 [InternalConsultationController::class, 'index'])->name('index');
     Route::get('create',            [InternalConsultationController::class, 'create'])->name('create');
     Route::post('/',                [InternalConsultationController::class, 'store'])->name('store');
@@ -95,16 +98,25 @@ Route::middleware('auth')->prefix('consult/internal')->name('consult.internal.')
     Route::delete('{submission}',   [InternalConsultationController::class, 'destroy'])->name('destroy');
 });
 
-/* --------------------------------------------------------------------------
- | 6.  TRIAGE Modules (auth) – ONE resource per module
- |     → Route names: triage.internal.*, triage.pedia.*, triage.teens.*, triage.obgyn.*
- -------------------------------------------------------------------------- */
-Route::middleware('auth')->group(function () {
+Route::middleware('auth')->name('triage.teens.')->prefix('triage/teens')->group(function () {
+    Route::get('/',        [TeensTriageController::class,'index'])->name('index');
+    Route::get('/create',  [TeensTriageController::class,'create'])->name('create');
+    Route::post('/',       [TeensTriageController::class,'store'])->name('store');
+    Route::get('/{teen}',  [TeensTriageController::class,'show'])->name('show');
+    Route::get('/{teen}/edit',[TeensTriageController::class,'edit'])->name('edit');
+
+    // ← Add this PUT route:
+    Route::put('/{teen}',  [TeensTriageController::class,'update'])->name('update');
+
+    Route::delete('/{teen}',[TeensTriageController::class,'destroy'])->name('destroy');
+});
+Route::middleware('auth','role:admin,encoder')->group(function () {
     Route::resource('triage/internal', InternalMedicineTriageController::class)->names('triage.internal');
     Route::resource('triage/pedia',    PediaTriageController::class)          ->names('triage.pedia');
-    Route::resource('triage/teens',    TeensTriageController::class)          ->names('triage.teens');
+   
     Route::resource('triage/obgyn',    ObGynTriageController::class)          ->names('triage.obgyn');
 });
+
 
 // Patient-scoped Triage
 Route::middleware('auth')
@@ -198,6 +210,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     /* OPD form templates */
     Route::resource('opd_forms', OpdFormController::class);
+    Route::get('opd_forms/{opd_form}/fill', [OpdFormController::class,'fill'])
+     ->name('opd_forms.fill');
+
+// (Bonus) handle the POST when they submit
+Route::post('opd_forms/{opd_form}/fill', [OpdFormController::class,'submit'])
+     ->name('opd_forms.submit');
     Route::get('opd_forms/{opd_form}/export.pdf', [OpdFormController::class,'exportPdf'])->name('opd_forms.export.pdf');
 
     /* High-Risk OPD forms */

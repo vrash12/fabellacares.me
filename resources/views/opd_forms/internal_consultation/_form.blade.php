@@ -297,6 +297,26 @@
                 @if(isset($consultForm))
                     @method('PUT')
                 @endif
+{{-- 0. Patient --}}
+<div class="section-card">
+    <h5 class="section-title">
+        <span class="section-number">🩺</span>
+        Patient
+    </h5>
+
+    <label class="form-label">Search patient (Last, Given)</label>
+    <select id="patient_id"
+            name="patient_id"
+            class="form-select"
+            style="width:100%">
+        {{-- ✨ When editing, pre-select the saved patient --}}
+        @isset($patient)
+            <option value="{{ $patient->id }}" selected>
+                {{ $patient->name }}
+            </option>
+        @endisset
+    </select>
+</div>
 
                 {{-- I. Reason for Consultation --}}
                 <div class="section-card">

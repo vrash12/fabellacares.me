@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use PDF;
 use App\Exports\ServedTokensExport;
 use App\Models\Token;
+use App\Exports\SchedulesExport; 
 use App\Models\Queue;
 use Carbon\Carbon;
 
@@ -104,6 +105,58 @@ $dateTo   = $toCarbon  ->format('m/d/Y');     // 07/09/2025   need these)
     ->select('delivery_type', DB::raw('COUNT(*) AS total'))
     ->groupBy('delivery_type')
     ->get();
+     $civilStats = DB::table('patient_profiles')
+        ->whereNotNull('civil_status')
+        ->select('civil_status as label', DB::raw('COUNT(*) AS total'))
+        ->groupBy('civil_status')
+        ->get();
+
+    // ── Religion ─────────────────────────────────────────────────────────────
+    $religionStats = DB::table('patient_profiles')
+        ->whereNotNull('religion')
+        ->select('religion as label', DB::raw('COUNT(*) AS total'))
+        ->groupBy('religion')
+        ->get();
+
+    // ── Family Planning Methods ──────────────────────────────────────────────
+    $familyStats = DB::table('triage_forms')
+        ->whereNotNull('family_planning')
+        ->select('family_planning as label', DB::raw('COUNT(*) AS total'))
+        ->groupBy('family_planning')
+        ->get();
+
+ 
+    // ── Blood Pressure Categories ────────────────────────────────────────────
+$bpStats = DB::table('triage_forms')
+    ->selectRaw("
+      CASE
+        WHEN CAST(SUBSTRING_INDEX(
+               JSON_UNQUOTE(JSON_EXTRACT(physical_exam_log, '$[0].bp')),
+               '/', 1
+             ) AS UNSIGNED) >= 140
+          OR CAST(SUBSTRING_INDEX(
+               JSON_UNQUOTE(JSON_EXTRACT(physical_exam_log, '$[0].bp')),
+               '/', -1
+             ) AS UNSIGNED) >= 90
+        THEN 'Hypertensive'
+        ELSE 'Normal'
+      END AS label,
+      COUNT(*) AS total
+    ")
+    ->groupBy('label')
+    ->get();
+
+    // ── Comorbidity Flags ────────────────────────────────────────────────────
+$comorbidityStats = DB::table('triage_forms')
+    ->selectRaw("
+      CASE
+        WHEN JSON_LENGTH(present_health_problems) > 0 THEN 'Has Comorbidity'
+        ELSE 'No Comorbidity'
+      END AS label,
+      COUNT(*) AS total
+    ")
+    ->groupBy('label')
+    ->get();
 
         //
         // ─── 5) TOKEN SUMMARY + PENDING COUNTS ─────────────────────────────────────
@@ -136,20 +189,12 @@ $dateTo   = $toCarbon  ->format('m/d/Y');     // 07/09/2025   need these)
         // ─── 7) RENDER VIEW ────────────────────────────────────────────────────────
         //
         return view('reports.index', compact(
-            'dateFrom',
-            'dateTo',
-            'visits',
-            'scheduleStats',
-            'ageStats',
-            'genderStats',
-            'bloodStats',
-            'deliveryStats',
-            'summary',
-            'queues',
-            'deptStats',
-            'dateFromIso',
-                'dateToIso',
-        ));
+        'dateFrom','dateTo','visits','scheduleStats',
+        'ageStats','genderStats','bloodStats','deliveryStats',
+        'civilStats','religionStats','familyStats',
+       'bpStats','comorbidityStats',
+        'summary','queues','deptStats','dateFromIso','dateToIso'
+    ));
     }
 
     public function servedTokenHistory(Request $request)
@@ -250,20 +295,30 @@ $dateTo   = $toCarbon  ->format('m/d/Y');     // 07/09/2025   need these)
       /**
      * Export Schedules within date range to Excel.
      */
-    public function exportSchedulesExcel(Request $request)
-    {
-        $from = $request->input('from') ?: Carbon::now()->subMonth()->format('Y-m-d');
-        $to   = $request->input('to')   ?: Carbon::now()->format('Y-m-d');
+ public function exportSchedulesExcel(Request $request)
+{
+    // parse or default
+    $from = $request->input('from')
+          ? Carbon::parse($request->input('from'))->startOfDay()
+          : Carbon::now()->subMonth()->startOfDay();
 
-        $fromCarbon = Carbon::parse($from)->startOfDay();
-        $toCarbon   = Carbon::parse($to)->endOfDay();
+    $to   = $request->input('to')
+          ? Carbon::parse($request->input('to'))->endOfDay()
+          : Carbon::now()->endOfDay();
 
-        return Excel::download(
-            new SchedulesExport($fromCarbon->toDateTimeString(), $toCarbon->toDateTimeString()),
-            "work_schedules_{$from}_to_{$to}.xlsx"
-        );
-    }
+    // build a “safe” filename
+    $fromSafe = $from->format('Y-m-d');
+    $toSafe   = $to  ->format('Y-m-d');
+    $filename = "work_schedules_{$fromSafe}_to_{$toSafe}.xlsx";
 
+    return Excel::download(
+        new SchedulesExport(
+            $from->toDateTimeString(),
+            $to->toDateTimeString()
+        ),
+        $filename
+    );
+}
     /**
      * Export Schedules within date range to PDF.
      */

@@ -220,14 +220,14 @@
           <div><span class="department-badge">{{ optional($form->queue)->name ?? $form->department }}</span></div>
  
           <div class="table-actions">
-            {{-- OPD-OB --}}
-            @if(str_contains($n,'opd'))
-              <a href="{{ route('patients.index') }}" class="btn-action btn-view">
-                <i class="fas fa-eye"></i> View OPD
-              </a>
-              <a href="{{ route('ob-opd-forms.create') }}" class="btn-action btn-new">
-                <i class="fas fa-plus"></i> New OPD
-              </a>
+        {{-- Consultation –- put this first --}}
+@if(str_contains($n,'consultation'))
+    <a href="{{ route('consult.internal.index') }}"  class="btn-action btn-view">
+        <i class="fas fa-eye"></i> View Consultation
+    </a>
+    <a href="{{ route('consult.internal.create') }}" class="btn-action btn-new">
+        <i class="fas fa-plus"></i> New Consultation
+    </a>
 
             {{-- High-Risk --}}
             @elseif(str_contains($n,'high risk'))
@@ -247,14 +247,14 @@
                 <i class="fas fa-plus"></i> New Follow-Up
               </a>
 
-            {{-- Consultation --}}
-            @elseif(str_contains($n,'consultation'))
-              <a href="{{ route('consult.internal.index') }}" class="btn-action btn-view">
-                <i class="fas fa-eye"></i> View Consultation
-              </a>
-              <a href="{{ route('consult.internal.create') }}" class="btn-action btn-new">
-                <i class="fas fa-plus"></i> New Consultation
-              </a>
+          {{-- Generic OPD --}}
+@elseif(str_contains($n,'opd'))
+    <a href="{{ route('patients.index') }}"          class="btn-action btn-view">
+        <i class="fas fa-eye"></i> View OPD
+    </a>
+    <a href="{{ route('ob-opd-forms.create') }}"     class="btn-action btn-new">
+        <i class="fas fa-plus"></i> New OPD
+    </a>
 
          {{-- Internal Medicine Triage Template --}}
             @elseif($form->form_no === 'TRG-IM-01')

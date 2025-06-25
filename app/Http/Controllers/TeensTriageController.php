@@ -45,29 +45,29 @@ class TeensTriageController extends Controller
         $template = OpdForm::where('form_no', 'TRG-TEEN-01')->firstOrFail();
 
         $rules = [
-            'chief_complaint'               => 'nullable|string|max:255',
-            'puberty_onset'                 => 'nullable|string|max:255',
-            'menarche'                      => 'nullable|string|max:255',
-            'emotional_concerns'            => 'nullable|in:Yes,No',
-            'emotional_concerns_details'    => 'nullable|string|max:255',
-            'sexual_activity'               => 'nullable|in:Yes,No',
-            'contraceptive_use'             => 'nullable|in:Yes,No',
-            'contraceptive_use_type'        => 'nullable|string|max:255',
-            'smoking'                       => 'nullable|in:Yes,No',
-            'alcohol'                       => 'nullable|in:Yes,No',
-            'drugs'                         => 'nullable|in:Yes,No',
-            'sleeping_habits'               => 'nullable|in:Normal,Disrupted',
-            'nutrition_issues'              => 'nullable|in:Yes,No',
-            'vaccination_status'            => 'nullable|in:Complete,Incomplete,Not known',
-            'last_vaccines'                 => 'nullable|string|max:255',
-            'bp_systolic'                   => 'nullable|integer',
-            'bp_diastolic'                  => 'nullable|integer',
-            'heart_rate'                    => 'nullable|integer',
-            'resp_rate'                     => 'nullable|integer',
-            'temperature'                   => 'nullable|numeric',
-            'height'                        => 'nullable|numeric',
-            'weight'                        => 'nullable|numeric',
-            'bmi'                           => 'nullable|numeric',
+            'chief_complaint'            => 'nullable|string|max:255',
+            'puberty_onset'              => 'nullable|string|max:255',
+            'menarche'                   => 'nullable|string|max:255',
+            'emotional_concerns'         => 'nullable|in:Yes,No',
+            'emotional_concerns_details' => 'nullable|string|max:255',
+            'sexual_activity'            => 'nullable|in:Yes,No',
+            'contraceptive_use'          => 'nullable|in:Yes,No',
+            'contraceptive_use_type'     => 'nullable|string|max:255',
+            'smoking'                    => 'nullable|in:Yes,No',
+            'alcohol'                    => 'nullable|in:Yes,No',
+            'drugs'                      => 'nullable|in:Yes,No',
+            'sleeping_habits'            => 'nullable|in:Normal,Disrupted',
+            'nutrition_issues'           => 'nullable|in:Yes,No',
+            'vaccination_status'         => 'nullable|in:Complete,Incomplete,Not known',
+            'last_vaccines'              => 'nullable|string|max:255',
+            'bp_systolic'                => 'nullable|integer',
+            'bp_diastolic'               => 'nullable|integer',
+            'heart_rate'                 => 'nullable|integer',
+            'resp_rate'                  => 'nullable|integer',
+            'temperature'                => 'nullable|numeric',
+            'height'                     => 'nullable|numeric',
+            'weight'                     => 'nullable|numeric',
+            'bmi'                         => 'nullable|numeric',
         ];
 
         $data = $request->validate($rules);
@@ -98,15 +98,21 @@ class TeensTriageController extends Controller
     /**
      * Show the form for editing the specified submission.
      */
-    public function edit(OpdSubmission $teens)
-    {
-        $teens->load('form');
+ public function edit(OpdSubmission $teens)
+{
+    $teens->load('form');
 
-        return view('opd_forms.teens_triage.edit', [
-            'teensForm' => $teens->answers,
-            'postRoute' => route('triage.teens.update', $teens),
-        ]);
-    }
+    return view('opd_forms.teens_triage.edit', [
+        'submission' => $teens,
+        'teensForm'  => $teens->answers,
+
+        // ← was: route('triage.teens.edit', …)
+        //     must be: route('triage.teens.update', …)
+        'postRoute'  => route('triage.teens.update', ['teen' => $teens->id]),
+    ]);
+}
+
+
 
     /**
      * Update the specified submission.
@@ -114,29 +120,29 @@ class TeensTriageController extends Controller
     public function update(Request $request, OpdSubmission $teens)
     {
         $rules = [
-            'chief_complaint'               => 'nullable|string|max:255',
-            'puberty_onset'                 => 'nullable|string|max:255',
-            'menarche'                      => 'nullable|string|max:255',
-            'emotional_concerns'            => 'nullable|in:Yes,No',
-            'emotional_concerns_details'    => 'nullable|string|max:255',
-            'sexual_activity'               => 'nullable|in:Yes,No',
-            'contraceptive_use'             => 'nullable|in:Yes,No',
-            'contraceptive_use_type'        => 'nullable|string|max:255',
-            'smoking'                       => 'nullable|in:Yes,No',
-            'alcohol'                       => 'nullable|in:Yes,No',
-            'drugs'                         => 'nullable|in:Yes,No',
-            'sleeping_habits'               => 'nullable|in:Normal,Disrupted',
-            'nutrition_issues'              => 'nullable|in:Yes,No',
-            'vaccination_status'            => 'nullable|in:Complete,Incomplete,Not known',
-            'last_vaccines'                 => 'nullable|string|max:255',
-            'bp_systolic'                   => 'nullable|integer',
-            'bp_diastolic'                  => 'nullable|integer',
-            'heart_rate'                    => 'nullable|integer',
-            'resp_rate'                     => 'nullable|integer',
-            'temperature'                   => 'nullable|numeric',
-            'height'                        => 'nullable|numeric',
-            'weight'                        => 'nullable|numeric',
-            'bmi'                           => 'nullable|numeric',
+            'chief_complaint'            => 'nullable|string|max:255',
+            'puberty_onset'              => 'nullable|string|max:255',
+            'menarche'                   => 'nullable|string|max:255',
+            'emotional_concerns'         => 'nullable|in:Yes,No',
+            'emotional_concerns_details' => 'nullable|string|max:255',
+            'sexual_activity'            => 'nullable|in:Yes,No',
+            'contraceptive_use'          => 'nullable|in:Yes,No',
+            'contraceptive_use_type'     => 'nullable|string|max:255',
+            'smoking'                    => 'nullable|in:Yes,No',
+            'alcohol'                    => 'nullable|in:Yes,No',
+            'drugs'                      => 'nullable|in:Yes,No',
+            'sleeping_habits'            => 'nullable|in:Normal,Disrupted',
+            'nutrition_issues'           => 'nullable|in:Yes,No',
+            'vaccination_status'         => 'nullable|in:Complete,Incomplete,Not known',
+            'last_vaccines'              => 'nullable|string|max:255',
+            'bp_systolic'                => 'nullable|integer',
+            'bp_diastolic'               => 'nullable|integer',
+            'heart_rate'                 => 'nullable|integer',
+            'resp_rate'                  => 'nullable|integer',
+            'temperature'                => 'nullable|numeric',
+            'height'                     => 'nullable|numeric',
+            'weight'                     => 'nullable|numeric',
+            'bmi'                        => 'nullable|numeric',
         ];
 
         $data = $request->validate($rules);

@@ -519,6 +519,27 @@
                           <span>Logout</span>
                         </button>
                     </form>
+                    @once
+  @push('scripts')
+  <script>
+    $(function(){
+      $('#patient_id').select2({
+        placeholder: 'Type at least 2 letters…',
+        minimumInputLength: 2,
+        ajax: {
+          url: @json(route('patients.search')),
+          data: params => ({ q: params.term }),
+          processResults: data => ({ results: data.results })
+        },
+        templateResult: item  => item.text || item.id,
+        templateSelection: item => item.text || item.id,
+        width: '100%'
+      });
+    });
+  </script>
+  @endpush
+@endonce
+
                 </li>
             </ul>
         </div>

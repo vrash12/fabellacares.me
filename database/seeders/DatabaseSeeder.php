@@ -14,6 +14,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-      $this->call(January2024VisitsSeeder::class);
+     
+
+      /*
+         GyneJanMar2024Seeder::class,
+        GyneJulSep2024Seeder::class,
+        GyneOctDec2024Seeder::class,
+        GyneQ2_2024Seeder.php
+         */
+
+      $this->call(GyneJanMarch2024Seeder::class);
+      $this->call(GyneJulSep2024Seeder::class);
+      $this->call(GyneOctDec2024Seeder::class);
+      $this->call(GyneQ2_2024Seeder::class);
     }
 }

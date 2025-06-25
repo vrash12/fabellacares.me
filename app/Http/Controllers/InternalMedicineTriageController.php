@@ -8,10 +8,11 @@ use Illuminate\Http\Request;
 
 class InternalMedicineTriageController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
+  public function __construct()
+{
+    $this->middleware(['auth','role:admin,encoder']);
+}
+
 
     /**
      * Display a listing of internal medicine triage submissions.

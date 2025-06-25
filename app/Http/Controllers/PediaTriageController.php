@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OpdForm;
 use App\Models\OpdSubmission;
 use Illuminate\Http\Request;
+use App\Models\Patient;
 
 class PediaTriageController extends Controller
 {
@@ -26,17 +27,14 @@ class PediaTriageController extends Controller
         return view('opd_forms.pedia_triage.index', compact('submissions'));
     }
 
-    /**
-     * Show the form for creating a new pedia triage submission.
-     */
-    public function create()
-    {
-        return view('opd_forms.pedia_triage.create', [
-            // the _form partial expects $pediaForm and $postRoute
-            'pediaForm' => null,
-            'postRoute' => route('triage.pedia.store'),
-        ]);
-    }
+public function create()
+{
+    return view('opd_forms.pedia_triage.create', [
+        'patients'   => Patient::all(),
+        'pediaForm'  => null,
+        'postRoute'  => route('triage.pedia.store'),
+    ]);
+}
 
     /**
      * Store a newly created pedia triage submission.
@@ -110,20 +108,15 @@ class PediaTriageController extends Controller
         return view('opd_forms.pedia_triage.show', compact('submission'));
     }
 
-    /**
-     * Show the form for editing the specified pedia triage submission.
-     */
-    public function edit(OpdSubmission $submission)
-    {
-        $submission->load('form');
-
-        return view('opd_forms.pedia_triage.edit', [
-            // pass the existing answers into the _form partial
-            'pediaForm' => $submission->answers,
-            'postRoute' => route('triage.pedia.update', $submission),
-        ]);
-    }
-
+public function edit(OpdSubmission $submission)
+{
+    return view('opd_forms.pedia_triage.edit', [
+        'patients'   => Patient::all(),
+        'submission' => $submission,
+        'pediaForm'  => $submission->answers,
+        'postRoute'  => route('triage.pedia.update', ['pedia' => $submission->id]),
+    ]);
+}
     /**
      * Update the specified pedia triage submission.
      */

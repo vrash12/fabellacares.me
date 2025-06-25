@@ -1,5 +1,6 @@
+{{--resources/views/opd_forms/opdb/show.blade.php--}}
 @php
-    $layout = auth()->user()->role === 'encoder'
+$layout = auth()->user()->role === 'encoder'
             ? 'layouts.encoder'
             : 'layouts.admin';
 @endphp

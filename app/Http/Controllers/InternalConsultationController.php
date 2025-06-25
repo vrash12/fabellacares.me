@@ -8,10 +8,11 @@ use Illuminate\Http\Request;
 
 class InternalConsultationController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
+   public function __construct()
+{
+   $this->middleware(['auth']);
+}
+
 
     /**
      * Display a listing of internal medicine consultation submissions.
@@ -33,6 +34,7 @@ class InternalConsultationController extends Controller
     {
         return view('opd_forms.internal_consultation.create', [
             'consultForm' => null,
+             'patient'     => null,   
             'postRoute'   => route('consult.internal.store'),
         ]);
     }
@@ -45,6 +47,7 @@ class InternalConsultationController extends Controller
         $template = OpdForm::where('form_no', 'OPD-F-10')->firstOrFail(); // adjust form_no
 
         $rules = [
+              'patient_id'                  => 'required|exists:patients,id',
             'main_complaint'               => 'nullable|string|max:255',
 
             'started_when'                 => 'nullable|date',
@@ -76,6 +79,7 @@ class InternalConsultationController extends Controller
 
         OpdSubmission::create([
             'form_id' => $template->id,
+             'user_id'    => auth()->id(), 
             'user_id' => auth()->id(),
             'answers' => $data,
         ]);
@@ -104,6 +108,7 @@ class InternalConsultationController extends Controller
 
         return view('opd_forms.internal_consultation.edit', [
             'consultForm' => $submission->answers,
+             'patient'     => $submission->patient, 
             'postRoute'   => route('consult.internal.update', $submission),
         ]);
     }
@@ -142,7 +147,7 @@ class InternalConsultationController extends Controller
 
         $data = $request->validate($rules);
 
-        $submission->update(['answers' => $data]);
+        $submission->update([ 'patient_id' => $data['patient_id'],'answers' => $data]);
 
         return redirect()
             ->route('consult.internal.index')

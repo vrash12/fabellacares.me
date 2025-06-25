@@ -56,19 +56,47 @@ class PatientRecordController extends Controller
     }
 public function index(Request $request)
 {
-    // 1) load every patient (plus profile & visit‐count)
-    $patients = Patient::with('profile')
-                       ->withCount('visits')
-                       ->get();
+    /* ------------------------------------------------------------
+     | 1.  Build the query
+     * -----------------------------------------------------------*/
+    $patients = Patient::query()
+        ->with('profile')          // eager-load sex / birth_date, etc.
+        ->withCount('visits');     // visits_count column in result set
 
-    // 2) load all non‐parent queues (for the “Queue” button modal)
-    $queues = Queue::with('parent')
-                   ->whereNotNull('parent_id')
+    // ── text search ────────────────────────────────────────────
+    if ($request->filled('search')) {
+        $term = trim($request->search);
+        $patients->where('name', 'like', "%{$term}%");
+    }
+
+    // ── gender filter ──────────────────────────────────────────
+    if ($request->filled('sex')) {
+        $sex = strtolower($request->sex);            // “male” / “female”
+        $patients->whereHas('profile', function ($q) use ($sex) {
+            // LOWER() makes the test case-insensitive
+            $q->whereRaw('LOWER(sex) = ?', [$sex]);
+        });
+    }
+
+    /* ------------------------------------------------------------
+     | 2.  Execute and paginate (10 rows per page)
+     * -----------------------------------------------------------*/
+    $patients = $patients
+        ->orderBy('name')
+        ->paginate(10)             // ← real pagination
+        ->withQueryString();       //   keeps the filters in the URL links
+
+    /* ------------------------------------------------------------
+     | 3.  Leaf queues for the “Issue & Print” modal
+     * -----------------------------------------------------------*/
+    $queues = Queue::whereNotNull('parent_id')
                    ->orderBy('parent_id')
                    ->orderBy('name')
                    ->get();
 
-    // 3) render the index view
+    /* ------------------------------------------------------------
+     | 4.  Render the same Blade
+     * -----------------------------------------------------------*/
     return view('patients.index', compact('patients', 'queues'));
 }
 

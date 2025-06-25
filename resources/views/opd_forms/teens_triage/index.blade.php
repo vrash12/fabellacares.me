@@ -1,4 +1,4 @@
-{{--resources/views/opd_forms/teens_triage/index.blade.php--}}
+{{-- resources/views/opd_forms/teens_triage/index.blade.php --}}
 @php
     $layout = auth()->user()->role === 'encoder'
             ? 'layouts.encoder'
@@ -31,11 +31,15 @@
                     <tr>
                         <td>{{ $sub->id }}</td>
                         <td>{{ data_get($sub->answers, 'chief_complaint', '—') }}</td>
-                        <td>{{ $sub->created_at->format('Y-m-d H:i') }}</td>
+                        <td>{{ optional($sub->created_at)->format('Y-m-d H:i') ?? '—' }}</td>
                         <td class="text-end">
-                            <a href="{{ route('triage.teens.show', $sub) }}" class="btn btn-sm btn-secondary">View</a>
-                            <a href="{{ route('triage.teens.edit', $sub) }}" class="btn btn-sm btn-info">Edit</a>
-                            <form action="{{ route('triage.teens.destroy', $sub) }}"
+                            <a href="{{ route('triage.teens.show',    ['teen' => $sub->id]) }}" class="btn btn-sm btn-secondary">
+                              View
+                            </a>
+                            <a href="{{ route('triage.teens.edit',    ['teen' => $sub->id]) }}" class="btn btn-sm btn-info">
+                              Edit
+                            </a>
+                            <form action="{{ route('triage.teens.destroy', ['teen' => $sub->id]) }}"
                                   method="POST"
                                   class="d-inline"
                                   onsubmit="return confirm('Delete this submission?');">

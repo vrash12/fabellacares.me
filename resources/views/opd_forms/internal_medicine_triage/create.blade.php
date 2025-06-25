@@ -1,4 +1,11 @@
-@extends('layouts.admin')
+{{--resources/views/opd_forms/internal_medicine_triage/create.blade.php--}}
+@php
+    $layout = auth()->user()->role === 'encoder'
+            ? 'layouts.encoder'
+            : 'layouts.admin';
+@endphp
+@extends($layout)
+
 
 @section('content')
   @include('opd_forms.internal_medicine_triage._form', [

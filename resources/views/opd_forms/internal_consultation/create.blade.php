@@ -4,6 +4,6 @@
 @section('content')
     @include('opd_forms.internal_consultation._form', [
         'consultForm' => null,
-        'postRoute'   => route('triage.internal.store')
+        'postRoute'   => route('consult.internal.store')
     ])
 @endsection

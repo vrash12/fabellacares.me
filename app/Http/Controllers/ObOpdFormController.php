@@ -16,18 +16,21 @@ class ObOpdFormController extends Controller
     /**
      * 1. List all OB submissions, show unique patients & queues for issuing tokens.
      */
-  public function index()
+public function index()
 {
-    // Fetch your submissions & patients & queues …
-    $subs     = OpdSubmission::with('patient.user', 'form')
-                 ->whereHas('form', fn($q) => $q->where('form_no','OPD-F-07'))
-                 ->latest()
-                 ->get();
+    $submissions = OpdSubmission::with('patient.user', 'form')
+        ->whereHas('form', fn($q) => $q->where('form_no','OPD-F-07'))
+        ->latest()
+        ->get();
 
-    $patients = $subs->pluck('patient')->filter()->unique('id')->values();
+    $patients = $submissions->pluck('patient')->filter()->unique('id')->values();
     $queues   = Department::all();
 
-    return view('opd_forms.opdb.index', compact('patients','queues'));
+    return view('opd_forms.opdb.index', compact(
+        'submissions',  // ← now available in your Blade
+        'patients',
+        'queues'
+    ));
 }
 
 
